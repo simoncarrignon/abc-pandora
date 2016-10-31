@@ -1,0 +1,3 @@
+[submodule "abcpmc"]
+	path = abcpmc
+	url = git@github.com:jakeret/abcpmc
