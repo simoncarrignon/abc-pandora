@@ -3,4 +3,4 @@
 	url = git@github.com:jakeret/abcpmc
 [submodule "entropy_abc"]
 	path = entropy_abc
-	url = git@github.com:xrubio/entropy_abc.git
+	url = git@github.com:simoncarrignon/entropy_abc.git
