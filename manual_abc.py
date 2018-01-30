@@ -7,12 +7,6 @@ import logging
 import time
 
 #index of the different parameters
-#indices= {  "mu"            : 0, 
-#            "market_size"   : 1,
-#            "nag_good"       : 2,
-#            "ngoods"        : 3,
-#            "cstep"         : 4}
-
 indices= {  "mu"            : 0, 
             "nstep"        : 1,
             "cstep"         : 2}
@@ -32,6 +26,7 @@ class Experiment:
         self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])
         self.binpath=binpath #binpath is the path where the executable & generic config ifle are stored 
         self.outpath=outpath
+
         #for key in indices.keys():
         #    print(key, ": ", self.params[indices[key]])
         # priors
@@ -53,6 +48,7 @@ class Experiment:
         self.kind=str(int(round(params[1]/1000)*1000))
 
 
+        ##TODO .updateConfig()
         ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
 
         #soup.goods['num']=str(int(self.params[indices['ngoods']]))
@@ -65,14 +61,10 @@ class Experiment:
         soup.numSteps['serializeResolution']=int(soup.numSteps['value'])
 
 
+        #TODO .createFolder()
         #create a directory to run experiment associated to this particle
         self.particleDirectory=os.path.join(self.outpath,self.expId)
         
-        #print("num of good=",soup.goods['num'])
-        #print("num of ag=",soup.numAgents['value'])
-        #print("num of ms=",soup.market['size'])
-        #print("num of ms=",soup.culture['step'])
-        #print("num of mu=",soup.culture['mutation'])
 
         #print("config_"+str(self.expId)+".xml")
         if (not os.path.isdir(self.particleDirectory)) and self.consistence:
