@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup as bs
-import os,time
+import os,time,sys,logging
+from shutil import rmtree
 #index of the different parameters
 indices= {  "mu"            : 0, 
             "nstep"        : 1,
@@ -8,13 +9,14 @@ indices= {  "mu"            : 0,
 ##Check consistency of paramter
 ##generate the folders and files for the xp
 class Experiment: 
-    def __init__(self, expId, params,binpath,outpath):
+    def __init__(self, params,binpath,outpath, prefId=""):
         self.consistence=True
         self.params = params
         #self.expId = "_".join([str(int(self.params[indices['ngoods']])),str(int(self.params[indices['nag_good']])),str(self.params[indices['market_size']]),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])
         self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])
         self.binpath=binpath #binpath is the path where the executable & generic config ifle are stored 
         self.outpath=outpath
+        self.score=-1
 
         #for key in indices.keys():
         #    print(key, ": ", self.params[indices[key]])
@@ -57,7 +59,7 @@ class Experiment:
 
         #print("config_"+str(self.expId)+".xml")
         if (not os.path.isdir(self.particleDirectory)) and self.consistence:
-            os.mkdir(self.particleDirectory) #create folder for the exp
+            os.makedirs(self.particleDirectory) #create folder for the exp
             os.mkdir(os.path.join(self.particleDirectory,"logs"))
             os.mkdir(os.path.join(self.particleDirectory,"data"))
             os.symlink(self.binpath+"/province",self.particleDirectory+ "/province") 
@@ -80,31 +82,43 @@ class Experiment:
         return(self.expId)
 
     #check if the score exist and return it, fi not return -1
-    def getScore(self):
-        file_score=os.path.join(self.particleDirectory,"score.txt")
+    def gatherScore(self):
+        filename_score=os.path.join(self.particleDirectory,"score.txt")
         time.sleep(.01)
-        last_score=-1
         try:
-            with open(file_score,"r") as score:
-                    last_score=int(score.readline().strip())
+            with open(filename_score,"r") as file_score:
+                    self.score=int(file_score.readline().strip())
         except IOError:
-            last_score=-1
-            #print(self.expId+" still running")
-        return(last_score)
+            logging.warning(str(self)+" still loading")
+            self.score=-1
+    #check if the score exist and return it, fi not return -1
+    def getScore(self):
+        return(self.score)
 
     def __str__(self):
         result = 'experiment: '+str(self.expId)#+' alpha: '+str('%.2f')%self.alpha+' beta: '+str('%.2f')%self.beta+' harbour bonus: '+str('%.2f')%self.harbourBonus
         return result
 
     #generate a string that countain the command that should be run on marenostrum
-    def generateTask(experiment):
+    def generateTask(self):
         #print("run pandora")
-        bashCommand = 'cd '+experiment.particleDirectory + ' && ./province && ./analysis ' +' && cd -- &&'
+        bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd -- &&'
         #output, error = process.communicate()
-        bashCommand += 'bash ./extractlast.sh '+os.path.join(experiment.particleDirectory,'agents.csv &&')
+        bashCommand += 'bash ./compupteScore.sh '+self.particleDirectory+' &&'
         #output, error = process.communicate()
-        bashCommand += 'rm -rf '+os.path.join(experiment.particleDirectory,"data") + ' '+os.path.join(experiment.particleDirectory,"logs")+ ' '+os.path.join(experiment.particleDirectory,"*.gdf \n")
+        bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
+        
+    
+    #generate a string that countain the command that should be run on marenostrum
+    def remove(self):
+        try:
+            rmtree(self.particleDirectory)
+            print("rm:"+self.expId+",score was:"+str(self.score))
+        except Exception as e:
+            print(e)
+
+
         
     
 
