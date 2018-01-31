@@ -1,6 +1,0 @@
-[submodule "abcpmc"]
-	path = abcpmc
-	url = git@github.com:jakeret/abcpmc
-[submodule "entropy_abc"]
-	path = entropy_abc
-	url = git@github.com:simoncarrignon/entropy_abc.git
