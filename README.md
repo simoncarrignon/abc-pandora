@@ -1,9 +1,9 @@
-#PANDORA ABC
+# PANDORA ABC
 Simple readme to do ABC on MN4 with ceeculture module of pandora
 
-###Intro
+### Intro
 First fthing is to install the python dependencies which should be only:  beautiful soup, a conveniant w2ay to read the config.xml files (though obviouslty I should be using a python xml reader but ...
-###install beautifulsoup from source here:http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/changes
+### install beautifulsoup from source here:http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/changes
 
 you need to download a tarball from exemple [here| http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/revision/449?start_revid=449] and copy in marenostrum untar and go to the folder
 
