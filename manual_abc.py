@@ -108,7 +108,7 @@ if __name__ == '__main__' :
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
-    epsilon=int(sys.argv[4])  #the maximum score we accept (o minimum)
+    epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
 
     orign=os.getcwd()
     
