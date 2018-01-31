@@ -4,6 +4,7 @@ import csv, math, sys, argparse, random,os,errno
 import numpy as np
 import logging
 import time
+import subprocess
 from ceecexp import Experiment
 
 class TophatPrior(object):
@@ -40,7 +41,7 @@ def genTestPool(size,pref):
     for p in range(size):
         priors = TophatPrior([0,300,5],[1,1000,7])
         params=priors()
-        one=Experiment(params,"/home/scarrign/ceeculture",pref)
+        one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
         with open("totry.out","a") as ttexp:
             ttexp.write(one.particleDirectory+'\n')
         pool_exp[one.getId()]=one
@@ -83,9 +84,11 @@ def writeNupdate(tmp_pdict):
 
         tasks[taskfilename]=True
 
+###Start the experiment carefull as it is strongly palteform dependent
 def launchExpe(taskfile):
-    print("sbatch mn4_manual_scheduling.sh "+taskfile)
-
+    command = "sbatch mn4_manual_scheduling.sh "+taskfile)
+    process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE,shell=True)
+     
 
 
 if __name__ == '__main__' :
