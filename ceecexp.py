@@ -101,10 +101,11 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
+	n_years=5
         #print("run pandora")
-        bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd -- &&'
+        bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
         #output, error = process.communicate()
-        bashCommand += 'bash ./compupteScore.sh '+self.particleDirectory+' &&'
+        bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+' && '
         #output, error = process.communicate()
         bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
