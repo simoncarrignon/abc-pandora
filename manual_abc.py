@@ -39,7 +39,7 @@ def dist(x,y):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,300,5],[1,1000,7])
+        priors = TophatPrior([0,9,10],[1,11,12])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
         with open("totry.out","a") as ttexp:
@@ -54,7 +54,8 @@ def writeNupdate(tmp_pdict):
     global countExpKind
     global countFileKind
     global tasks
-    task_per_node=20 #defined given MN configuration
+    task_per_node=48 #defined given MN configuration
+
     
     for pone in tmp_pdict.keys() :
         one=tmp_pdict[pone]
@@ -86,8 +87,12 @@ def writeNupdate(tmp_pdict):
 
 ###Start the experiment carefull as it is strongly palteform dependent
 def launchExpe(taskfile):
-    command = "sbatch mn4_manual_scheduling.sh "+taskfile
-    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+    if(os.getenv('BSC_MACHINE') == 'mn4'):
+        command = "sbatch mn4_manual_scheduling.sh "+taskfile
+        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+    if(os.getenv('BSC_MACHINE') == 'nord3'):
+        command = "sbatch2nord3 "+taskfile
+        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
      
 
 
