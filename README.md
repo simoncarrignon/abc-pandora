@@ -7,7 +7,11 @@ Simple readme to do ABC on MN4 with ceeculture module of pandora
 ### Internal Tools
 
 * OBviously you need [pandora]() and [ceeculture]()
-* you will need the R script to compute the score of the experience
+* you will need the script that compute the score of the experience:
+	* for this version of ceeculture we utilise a Rscript include in ceeculture
+	```bash
+	  ln -s ~/ceeculture/AnalyseTools/computeScore.R .
+	```
 * For marenostrum you will need the script to launch the experiments which is in `mn_tools`
 
 ```bash
