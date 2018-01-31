@@ -6,7 +6,7 @@ Simple readme to do ABC on MN4 with ceeculture module of pandora
 
 ### Internal Tools
 
-* OBviously you need [pandora] and [ceeculture]
+* OBviously you need [pandora]() and [ceeculture]()
 * you will need the R script to compute the score of the experience
 * For marenostrum you will need the script to launch the experiments which is in `mn_tools`
 
@@ -21,9 +21,9 @@ First fthing is to install the python dependencies which should be only:  beauti
 ### install beautifulsoup 
 
 
-From source [here|http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/changes]
+From source [here](http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/changes)
 
-you need to download a tarball from exemple [here| http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/revision/449?start_revid=449] and copy in marenostrum untar and go to the folder
+you need to download a tarball from exemple [here]( http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/revision/449?start_revid=449) and copy in marenostrum untar and go to the folder
 
 befor edoing the install you will have to create a folder for manuall python installa nd add the folder to your PYTHONPATH 
 
