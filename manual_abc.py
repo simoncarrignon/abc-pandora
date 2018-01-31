@@ -34,16 +34,15 @@ def dist(x,y):
     diff= x-y;
     return diff
 
-#generate a pool of experiment of size `size`
-def genTestPool(size):
+#generate a pool of experiment of size `size` that will be stored in the folder `pref`
+def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
         priors = TophatPrior([0,300,5],[1,1000,7])
         params=priors()
-        one=Experiment("gege",params,"/home/scarrign/ceeculture",".")
+        one=Experiment(params,"/home/scarrign/ceeculture",pref)
         with open("totry.out","a") as ttexp:
-            ttexp.write(one.getId()+'\n')
-
+            ttexp.write(one.particleDirectory+'\n')
         pool_exp[one.getId()]=one
     return(pool_exp)
 
@@ -72,7 +71,13 @@ def writeNupdate(tmp_pdict):
             countFileKind[kind]=countFileKind[kind]+1
             countExpKind[kind]=0
 
+
+        if (not os.path.isdir("taskfiles")):
+            os.makedirs("taskfiles") #create folder for the taskfiles
+
         taskfilename=kind+"_"+str(countFileKind[kind])+".task"
+        taskfilename=os.path.join("taskfiles",taskfilename)
+
         with open(taskfilename,'a') as tskf:
             tskf.write(task)
 
@@ -84,20 +89,27 @@ def launchExpe(taskfile):
 
 
 if __name__ == '__main__' :
+
+
     pdict={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
     countFileKind={} #number of tasksfile for each different "kind" 
     tasks={} #list of taskfiles that have to be send to mn
 
     tmp_pdict={} #pool of particules
-    numParticule=10 #This is the total number of resulta that we want
-    numproc=80 #this is the number of parallele task we will try
-    epsilon=10000
+    numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
+    numproc=int(sys.argv[2]) #this is the number of parallele task we will try
+    numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
+    epsilon=int(sys.argv[4])  #the maximum score we accept (o minimum)
+
+    orign=os.getcwd()
+    
+    pref="eps_"+str(epsilon)
 
     with open("totry.out","w") as ttexp:
         ttexp.write("")
    
-    tmp_pdict=genTestPool(numproc)
+    tmp_pdict=genTestPool(numproc,pref)
     ###initialize pool
     writeNupdate(tmp_pdict)
 
@@ -119,13 +131,13 @@ if __name__ == '__main__' :
         tmp_keys=list(tmp_pdict.keys())
         for t in tmp_keys:
             tmp_exp=tmp_pdict[t]
-            s=tmp_exp.getScore()
-            if(s>0):
-                if(s>epsilon):
-                    #print("u lame")
+            tmp_exp.gatherScore()
+            if(tmp_exp.score>0):
+                if(tmp_exp.score > epsilon):
+                    tmp_exp.remove()
                     tmp_pdict.pop(t,None)
                 else:
-                    pdict[tmp_exp.getId()]=s
+                    pdict[tmp_exp.getId()]=tmp_exp.score
                     tmp_pdict.pop(t,None)
 
         #the pool is empty : all simulation finished and we have not yeat enough particle
@@ -134,7 +146,7 @@ if __name__ == '__main__' :
                 ttexp.write("")
 
             ###re-initialize pool
-            tmp_pdict=genTestPool(numproc)
+            tmp_pdict=genTestPool(numproc,pref)
             writeNupdate(tmp_pdict)
             ##findFileneNameAndUpdateCounter
             #Launch remaining tasks
