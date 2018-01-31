@@ -47,9 +47,10 @@ class Experiment:
         #soup.market['size']=str(self.params[indices['market_size']])
         soup.culture['step']=str(int(self.params[indices['cstep']]))
         soup.culture['mutation']=str(self.params[indices['mu']])
-        soup.numSteps['value']=int(self.params[indices['nstep']])
+        soup.numSteps['value']=int(self.params[indices['nstep']])*3*int(self.params[indices['cstep']])
         #soup.numSteps['value']=str(int(self.params[indices['cstep']])*3*100)
-        soup.numSteps['serializeResolution']=int(soup.numSteps['value'])
+        #soup.numSteps['serializeResolution']=int(soup.numSteps['value'])
+        soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
 
 
         #TODO .createFolder()
@@ -84,10 +85,14 @@ class Experiment:
     #check if the score exist and return it, fi not return -1
     def gatherScore(self):
         filename_score=os.path.join(self.particleDirectory,"score.txt")
-        time.sleep(.01)
+        time.sleep(.1)
         try:
             with open(filename_score,"r") as file_score:
-                    self.score=float(file_score.readline().strip())
+		try:
+                 	self.score=float(file_score.readline().strip())
+		except :
+            		logging.debug("score in a bad format")
+	
         except IOError:
             logging.debug(str(self)+" still loading")
             self.score=-1
