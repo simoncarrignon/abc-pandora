@@ -87,7 +87,7 @@ class Experiment:
         time.sleep(.01)
         try:
             with open(filename_score,"r") as file_score:
-                    self.score=int(file_score.readline().strip())
+                    self.score=float(file_score.readline().strip())
         except IOError:
             logging.debug(str(self)+" still loading")
             self.score=-1
