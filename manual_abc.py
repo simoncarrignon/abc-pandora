@@ -86,8 +86,8 @@ def writeNupdate(tmp_pdict):
 
 ###Start the experiment carefull as it is strongly palteform dependent
 def launchExpe(taskfile):
-    command = "sbatch mn4_manual_scheduling.sh "+taskfile)
-    process = subprocess.Popen(bashCommand, stdout=subprocess.PIPE,shell=True)
+    command = "sbatch mn4_manual_scheduling.sh "+taskfile
+    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
      
 
 
