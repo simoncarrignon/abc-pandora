@@ -89,7 +89,7 @@ class Experiment:
             with open(filename_score,"r") as file_score:
                     self.score=int(file_score.readline().strip())
         except IOError:
-            logging.warning(str(self)+" still loading")
+            logging.debug(str(self)+" still loading")
             self.score=-1
     #check if the score exist and return it, fi not return -1
     def getScore(self):
