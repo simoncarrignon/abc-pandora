@@ -5,6 +5,7 @@ import numpy as np
 import logging
 import time
 from ceecexp import Experiment
+from ceecexp import order
 
 class TophatPrior(object):
     """
@@ -90,10 +91,14 @@ def launchExpe(taskfile):
 
 ## write  a dictionnary of particules `particules` for the epsilon `epsi` in the file `outfilename`
 def writeParticules(particules,epsi,outfilename):
-	with open(outfilename, 'wb') as csv_file:
-            writer = csv.writer(csv_file)
+        sep=","
+	with open(outfilename, 'wb') as outpart:
+            header=order+sep+'epsilon'+"\n"
+       	    outpart.write(header)
     	    for eid, score in particules.items():
-       	    	writer.writerow([eid, score,epsilon])
+                thetas=eid.replace("_",",")
+                row=thetas+ sep+ str(score) + sep + str(epsilon)+ "\n"
+       	    	outpart.write(row)
 
 if __name__ == '__main__' :
 
