@@ -88,11 +88,12 @@ def launchExpe(taskfile):
     print("sbatch mn4_manual_scheduling.sh "+taskfile)
 
 
+## write  a dictionnary of particules `particules` for the epsilon `epsi` in the file `outfilename`
 def writeParticules(particules,epsi,outfilename):
 	with open(outfilename, 'wb') as csv_file:
-    		writer = csv.writer(csv_file)
-    	for eid, score in particules.items():
-       		writer.writerow([eid, score,epsilon])
+            writer = csv.writer(csv_file)
+    	    for eid, score in particules.items():
+       	    	writer.writerow([eid, score,epsilon])
 
 if __name__ == '__main__' :
 
