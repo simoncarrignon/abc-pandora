@@ -63,8 +63,12 @@ class Experiment:
             os.makedirs(self.particleDirectory) #create folder for the exp
             os.mkdir(os.path.join(self.particleDirectory,"logs"))
             os.mkdir(os.path.join(self.particleDirectory,"data"))
-            os.symlink(self.binpath+"/build/ceec",self.particleDirectory+ "/province") 
-            os.symlink(self.binpath+"/AnalyseTools/build/analysis",self.particleDirectory+ "/analysis") 
+    	    if(os.getenv('BSC_MACHINE') == 'mn4'):
+                os.symlink(self.binpath+"/build/ceec",self.particleDirectory+ "/province") 
+            	os.symlink(self.binpath+"/AnalyseTools/build/analysis",self.particleDirectory+ "/analysis") 
+    	    if(os.getenv('BSC_MACHINE') == 'nord3'):
+                os.symlink(self.binpath+"/province",self.particleDirectory+ "/province") 
+            	os.symlink(self.binpath+"/AnalyseTools/analysis",self.particleDirectory+ "/analysis") 
 
             with open(self.particleDirectory+"/config.xml","a") as out:
                 out.write(soup.prettify())
