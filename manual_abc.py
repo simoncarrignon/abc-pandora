@@ -40,11 +40,11 @@ def dist(x,y):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,9,10],[1,11,12])
+        priors = TophatPrior([0,40,10],[1,41,12])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
-        with open("totry.out","a") as ttexp:
-            ttexp.write(one.particleDirectory+'\n')
+        #with open("totry.out","a") as ttexp:
+        #    ttexp.write(one.particleDirectory+'\n')
         pool_exp[one.getId()]=one
     return(pool_exp)
 
@@ -55,7 +55,7 @@ def writeNupdate(tmp_pdict):
     global countExpKind
     global countFileKind
     global tasks
-    task_per_node=48 #defined given MN configuration
+    global numproc_node #defined given MN configuration
 
     
     for pone in tmp_pdict.keys() :
@@ -69,7 +69,7 @@ def writeNupdate(tmp_pdict):
 
         countExpKind[kind]=countExpKind[kind]+1 #increase number of expe of this kind
 
-        if(countExpKind[kind] > task_per_node): #if number of expe is too high, increase number of file 
+        if(countExpKind[kind] > numproc_node): #if number of expe is too high, increase number of file 
             #TODO here should launch the file already full fullfillfillfull
             countFileKind[kind]=countFileKind[kind]+1
             countExpKind[kind]=0
@@ -89,10 +89,11 @@ def writeNupdate(tmp_pdict):
 ###Start the experiment carefull as it is strongly palteform dependent
 def launchExpe(taskfile):
     if(os.getenv('BSC_MACHINE') == 'mn4'):
-        command = "bash 2mn4.sh "+taskfile+ " 00:10:00"
+        command = "bash 2mn4.sh "+taskfile+ " 00:10:00 "+str(numproc_node)
+
         process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
     if(os.getenv('BSC_MACHINE') == 'nord3'):
-        command = "bash 2nord3.sh "+taskfile+ ' 00:10'
+        command = "bash 2nord3.sh "+taskfile+ ' 00:10 '+str(numproc_node)
         process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
 
 
@@ -100,7 +101,7 @@ def launchExpe(taskfile):
 def writeParticules(particules,epsi,outfilename):
         sep=","
 	with open(outfilename, 'wb') as outpart:
-            header=order+sep+'epsilon'+"\n"
+            header=order+sep+"score"+sep+'epsilon'+"\n"
        	    outpart.write(header)
     	    for eid, score in particules.items():
                 thetas=eid.replace("_",",")
@@ -124,9 +125,10 @@ if __name__ == '__main__' :
     orign=os.getcwd()
     
     pref="eps_"+str(epsilon)
-
-    with open("totry.out","w") as ttexp:
-        ttexp.write("")
+    jobid="mother_"+os.getenv("SLURM_JOBID")
+    logging.basicConfig(filename=jobid+".log",level=logging.INFO)
+    #with open("totry.out","w") as ttexp:
+    #    ttexp.write("")
    
     tmp_pdict=genTestPool(numproc,pref)
     ###initialize pool
@@ -137,8 +139,9 @@ if __name__ == '__main__' :
        
     while(len(pdict) < numParticule):
         tsks=list(tasks.keys())
+	logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
         if(len(tsks)>0):
-            print(tsks)
+            logging.info(tsks)
             for l in tsks:
                 launchExpe(l)
                 tasks.pop(l,None)
@@ -161,8 +164,8 @@ if __name__ == '__main__' :
 
         #the pool is empty : all simulation finished and we have not yeat enough particle
         if(len(tmp_pdict) == 0): 
-            with open("totry.out","w") as ttexp:
-                ttexp.write("")
+            #with open("totry.out","w") as ttexp:
+            #    ttexp.write("")
 
             ###re-initialize pool
             tmp_pdict=genTestPool(numproc,pref)
