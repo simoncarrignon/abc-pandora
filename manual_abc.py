@@ -4,6 +4,7 @@ import csv, math, sys, argparse, random,os,errno
 import numpy as np
 import logging
 import time
+import subprocess
 from ceecexp import Experiment
 from ceecexp import order
 
