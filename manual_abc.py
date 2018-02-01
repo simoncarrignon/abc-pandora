@@ -88,12 +88,17 @@ def writeNupdate(tmp_pdict):
 ###Start the experiment carefull as it is strongly palteform dependent
 def launchExpe(taskfile):
     if(os.getenv('BSC_MACHINE') == 'mn4'):
-        command = "sbatch mn4_manual_scheduling.sh "+taskfile
+        command = "bash 2mn4.sh "+taskfile+ " 00:10:00"
         process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
     if(os.getenv('BSC_MACHINE') == 'nord3'):
-        command = "sbatch2nord3 "+taskfile
+        command = "bash 2nord3.sh "+taskfile+ ' 00:10'
         process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-     
+
+def writeParticules(particules,epsi,outfilename):
+	with open(outfilename, 'wb') as csv_file:
+    		writer = csv.writer(csv_file)
+    	for eid, score in particules.items():
+       		writer.writerow([eid, score,epsilon])
 
 
 if __name__ == '__main__' :
@@ -158,3 +163,4 @@ if __name__ == '__main__' :
             writeNupdate(tmp_pdict)
             ##findFileneNameAndUpdateCounter
             #Launch remaining tasks
+    writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
