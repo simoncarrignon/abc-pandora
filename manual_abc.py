@@ -38,7 +38,7 @@ def dist(x,y):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,300,5],[1,1000,7])
+        priors = TophatPrior([0,9,10],[1,11,12])
         params=priors()
         one=Experiment(params,"/home/scarrign/ceeculture",pref)
         with open("totry.out","a") as ttexp:
@@ -53,7 +53,8 @@ def writeNupdate(tmp_pdict):
     global countExpKind
     global countFileKind
     global tasks
-    task_per_node=20 #defined given MN configuration
+    task_per_node=48 #defined given MN configuration
+
     
     for pone in tmp_pdict.keys() :
         one=tmp_pdict[pone]
@@ -87,6 +88,11 @@ def launchExpe(taskfile):
     print("sbatch mn4_manual_scheduling.sh "+taskfile)
 
 
+def writeParticules(particules,epsi,outfilename):
+	with open(outfilename, 'wb') as csv_file:
+    		writer = csv.writer(csv_file)
+    	for eid, score in particules.items():
+       		writer.writerow([eid, score,epsilon])
 
 if __name__ == '__main__' :
 
@@ -100,7 +106,7 @@ if __name__ == '__main__' :
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
-    epsilon=int(sys.argv[4])  #the maximum score we accept (o minimum)
+    epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
 
     orign=os.getcwd()
     
@@ -150,3 +156,4 @@ if __name__ == '__main__' :
             writeNupdate(tmp_pdict)
             ##findFileneNameAndUpdateCounter
             #Launch remaining tasks
+    writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
