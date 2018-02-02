@@ -134,7 +134,15 @@ class Experiment:
     def remove(self):
         try:
             rmtree(self.particleDirectory)
-            print("rm:"+self.expId+",score was:"+str(self.score))
+            logging.info("rm:"+self.expId+",score was:"+str(self.score))
+        except Exception as e:
+            print(e)
+
+    #generate a string that countain the command that should be run on marenostrum
+    def softRemove(self):
+        try:
+            rmtree(self.particleDirectory)
+            logging.info("rm:"+self.expId+",score was:"+str(self.score))
         except Exception as e:
             print(e)
 
