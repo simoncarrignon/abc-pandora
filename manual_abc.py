@@ -82,15 +82,16 @@ def writeNupdate(tmp_pdict):
 
         tasks[taskfilename]=True
 
-###Start the experiment carefull as it is strongly palteform dependent
+###launch batch of experiments given the machine used
+#TODO a real class "launcher" that can abstract that from the ABC
 def launchExpe(taskfile):
+    time="00:30:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
-        command = "bash 2mn4.sh "+taskfile+ " 00:10:00 "+str(numproc_node)
-
-        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+        command = "bash 2mn4.sh"
     if(os.getenv('BSC_MACHINE') == 'nord3'):
-        command = "bash 2nord3.sh "+taskfile+ ' 00:10 '+str(numproc_node)
-        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+        command = "bash 2nord3.sh"
+    command = " ".join([command,taskfile,time,str(numproc_node)])
+    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
 
 
 ## write  a dictionnary of particules `particules` for the epsilon `epsi` in the file `outfilename`
