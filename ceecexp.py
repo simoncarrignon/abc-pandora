@@ -99,7 +99,7 @@ class Experiment:
     #check if the score exist and return it, fi not return -1
     def gatherScore(self):
         filename_score=os.path.join(self.particleDirectory,"score.txt")
-        time.sleep(.01)
+        time.sleep(.001)
         try:
             with open(filename_score,"r") as file_score:
 		try:
