@@ -50,10 +50,13 @@ def genTestPool(size,pref):
 
 ###Write the task file and update the counter of the number of task per file
 def writeNupdate(tmp_pdict):
+
+    ###ALL that would  be  really  nicer if ABC was an object 
     global countExpKind
     global countFileKind
     global tasks
     global numproc_node #defined given MN configuration
+    global jobid
 
     
     for pone in tmp_pdict.keys() :
@@ -76,7 +79,7 @@ def writeNupdate(tmp_pdict):
         if (not os.path.isdir("taskfiles")):
             os.makedirs("taskfiles") #create folder for the taskfiles
 
-        taskfilename=kind+"_"+str(countFileKind[kind])+".task"
+        taskfilename=kind+"_"+str(countFileKind[kind])+"-"+jobid+".task"
         taskfilename=os.path.join("taskfiles",taskfilename)
 
         with open(taskfilename,'a') as tskf:
