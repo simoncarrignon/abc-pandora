@@ -187,9 +187,8 @@ if __name__ == '__main__' :
                     tmp_pdict.pop(t,None)
 
         #the pool is empty : all simulation finished and we have not yet enough particle
-        if(len(tmp_pdict) == 0): 
-            #with open("totry.out","w") as ttexp:
-            #    ttexp.write("")
+        if(len(tmp_pdict) == 0 and len(pditc)<numParticule): 
+
             ###re-initialize pool
             tmp_pdict=genTestPool(numproc,pref)
             writeNupdate(tmp_pdict)
