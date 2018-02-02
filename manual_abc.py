@@ -39,8 +39,10 @@ def genTestPool(size,pref):
         priors = TophatPrior([0,0.5,0,750,1],[1,15,10,760,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
-        #with open("totry.out","a") as ttexp:
-        #    ttexp.write(one.particleDirectory+'\n')
+	while(not one.consistence):
+       	    priors = TophatPrior([0,0.5,0,250,1],[1,15,10,260,30])
+            params=priors()
+	    one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
 
