@@ -31,16 +31,12 @@ class TophatPrior(object):
 
 
 
-##Compute the distance from the exp to the real data
-def dist(x,y):
-    diff= x-y;
-    return diff
 
 #generate a pool of experiment of size `size` that will be stored in the folder `pref`
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,40,10],[1,41,12])
+        priors = TophatPrior([0,0.5,0,750,1],[1,15,10,760,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
         #with open("totry.out","a") as ttexp:
