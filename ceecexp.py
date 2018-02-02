@@ -3,10 +3,12 @@ import os,time,sys,logging
 from shutil import rmtree
 #index of the different parameters
 indices= {  "mu"            : 0, 
-            "nstep"        : 1,
-            "cstep"         : 2}
+            "mumax"        : 1,
+            "copy"        : 2,
+            "nstep"        : 3,
+            "cstep"         : 4}
 sep=","
-order = 'nstep'+sep+'cstep'+sep+'mu'
+order = 'nstep'+sep+'cstep'+sep+'mu'+sep+'mumax'+sep+'copy'
 
 ##Check consistency of paramter
 ##generate the folders and files for the xp
@@ -15,7 +17,7 @@ class Experiment:
         self.consistence=True
         self.params = params
         #self.expId = "_".join([str(int(self.params[indices['ngoods']])),str(int(self.params[indices['nag_good']])),str(self.params[indices['market_size']]),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])
-        self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])
+        self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']]),str(self.params[indices['mumax']]),str(self.params[indices['copy']])])
         self.binpath=binpath #binpath is the path where the executable & generic config ifle are stored 
         self.outpath=outpath
         self.score=-1
@@ -28,6 +30,9 @@ class Experiment:
         if((int(self.params[indices['cstep']]) < 1 ) or  #No experiments if no cultural step
            #(int(self.params[indices['nag_good']]) < 1) or  #if num <2 
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
+           (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
+           (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
+           (self.params[indices['nstep']]/(self.params[indices['cstep']]*3) < 10 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
@@ -49,10 +54,13 @@ class Experiment:
         #soup.market['size']=str(self.params[indices['market_size']])
         soup.culture['step']=str(int(self.params[indices['cstep']]))
         soup.culture['mutation']=str(self.params[indices['mu']])
-        soup.numSteps['value']=int(self.params[indices['nstep']])*3*int(self.params[indices['cstep']])
+        soup.culture['mumax']=str(self.params[indices['mumax']])
+        soup.culture['copy']=str(self.params[indices['copy']])
+        soup.numSteps['value']=int(self.params[indices['nstep']])
         #soup.numSteps['value']=str(int(self.params[indices['cstep']])*3*100)
         #soup.numSteps['serializeResolution']=int(soup.numSteps['value'])
         soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
+        soup.events['rate']=int(self.params[indices['nstep']])/(6*int(self.params[indices['cstep']]))
 
 
         #TODO .createFolder()
