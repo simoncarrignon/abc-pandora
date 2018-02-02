@@ -138,7 +138,7 @@ if __name__ == '__main__' :
     try:
         jobid+=os.getenv("SLURM_JOBID")
     except:
-	jobid+=os.getpid()
+	jobid+=str(os.getpid())
 	logging.warning('not a slurm job')
 
     #open a general log file
@@ -154,7 +154,7 @@ if __name__ == '__main__' :
        
     oldlen=0
     while(len(pdict) < numParticule):
-	if(len(pditc)>oldlen): ##logging only if new particules found
+	if(len(pdict)>oldlen): ##logging only if new particules found
 	    oldlen=len(pdict)
 	    logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
 
