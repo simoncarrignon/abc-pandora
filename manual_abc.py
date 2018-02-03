@@ -78,13 +78,17 @@ def writeNupdate(tmp_pdict):
         if (not os.path.isdir("taskfiles")):
             os.makedirs("taskfiles") #create folder for the taskfiles
 
-        taskfilename=kind+"_"+str(countFileKind[kind])+"-"+jobid+".task"
+	taskid=kind+"_"+str(countFileKind[kind])
+        taskfilename=taskid+"-"+jobid+".task"
         taskfilename=os.path.join("taskfiles",taskfilename)
 
         with open(taskfilename,'a') as tskf:
             tskf.write(task)
 
-        tasks[taskfilename]=True
+        tasks[taskid]={}
+        tasks[taskid]['filename']=taskfilename
+        tasks[taskid]['status']='hold'
+	print(tasks)
 
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that from the ABC
@@ -169,10 +173,32 @@ if __name__ == '__main__' :
         if(len(tsks)>0):
             logging.info(tsks)
             for l in tsks:
-                launchExpe(l)
+                launcher=launchExpe(tasks[l]['filename'])
+		out, err = launcher.communicate()
+		taskid="task-"
+		print(tasks)
+		print(out,err)
+	 	try:
+		    taskid+=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+		except:
+		    logging.warning("Task ID not found")
                 tasks.pop(l,None)
             for cnt in countFileKind.keys():
                 countFileKind[cnt]=countFileKind[cnt]+1
+	#for tid,tproc in tasks.item():
+	#	if(tasks[tid]['status'] == 'hold'):
+        #        	launcher=launchExpe(tasks[l]['filename'])
+	#		out, err = launcher.communicate()
+	#		taskid="task-"
+	#		print(tasks)
+	#		print(out,err)
+	# 		try:
+	#		    taskid+=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+	#		except:
+	#		    logging.warning("Task ID not found")
+			    
+			    
+			
 
 
         ##update the pool of particule given their score if the experiment has finished
