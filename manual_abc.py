@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import csv, math, sys, argparse, random,os,errno
+import csv, math, sys, argparse, random,os,errno,re
 import numpy as np
 import logging
 import time
@@ -36,11 +36,10 @@ class TophatPrior(object):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,0.5,0,750,1],[1,15,10,760,30])
+        priors = TophatPrior([0,0.5,0,750,1],[1,15,10,7500,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
 	while(not one.consistence):
-       	    priors = TophatPrior([0,0.5,0,250,1],[1,15,10,260,30])
             params=priors()
 	    one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
         pool_exp[one.getId()]=one
@@ -90,13 +89,15 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that from the ABC
 def launchExpe(taskfile):
-    time="00:30:00"
+    time="00:01:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
         command = "bash 2mn4.sh"
     if(os.getenv('BSC_MACHINE') == 'nord3'):
         command = "bash 2nord3.sh"
+	
     command = " ".join([command,taskfile,time,str(numproc_node)])
     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+    return(process)
 
 
 ## Write  a dictionnary of particules `particules` for the epsilon `epsi` in the file `outfilename`
@@ -140,10 +141,10 @@ if __name__ == '__main__' :
     
     pref="eps_"+str(epsilon)
     jobid="mother_"
+    jobid+=str(os.getpid())
     try:
-        jobid+=os.getenv("SLURM_JOBID")
+        jobid+="_"+os.getenv("SLURM_JOBID")
     except:
-	jobid+=str(os.getpid())
 	logging.warning('not a slurm job')
 
     #open a general log file
@@ -159,6 +160,7 @@ if __name__ == '__main__' :
        
     oldlen=0
     while(len(pdict) < numParticule):
+
 	if(len(pdict)>oldlen): ##logging only if new particules found
 	    oldlen=len(pdict)
 	    logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
@@ -187,8 +189,7 @@ if __name__ == '__main__' :
                     tmp_pdict.pop(t,None)
 
         #the pool is empty : all simulation finished and we have not yet enough particle
-        if(len(tmp_pdict) == 0 and len(pditc)<numParticule): 
-
+        if(len(tmp_pdict) == 0 and len(pdict)<numParticule): 
             ###re-initialize pool
             tmp_pdict=genTestPool(numproc,pref)
             writeNupdate(tmp_pdict)
