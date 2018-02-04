@@ -36,7 +36,7 @@ class TophatPrior(object):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,0.5,0,750,1],[1,15,10,7500,30])
+        priors = TophatPrior([0,0.5,0,750,1],[1,15,10,7600,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
 	while(not one.consistence):
@@ -93,7 +93,7 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that from the ABC
 def launchExpe(taskfile):
-    time="00:01:00"
+    time="00:05:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
         command = "bash 2mn4.sh"
     if(os.getenv('BSC_MACHINE') == 'nord3'):
@@ -170,26 +170,11 @@ if __name__ == '__main__' :
 	    logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
 
         tsks=list(tasks.keys())
-        #if(len(tsks)>0):
-        #    logging.info(tsks)
-        #    for l in tsks:
-        #        launcher=launchExpe(tasks[l]['filename'])
-	#	out, err = launcher.communicate()
-	#	taskid="task-"
-	#	print(tasks)
-	#	print(out,err)
-	# 	try:
-	#	    taskid+=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
-	#	except:
-	#	    logging.warning("Task ID not found")
-        #        tasks.pop(l,None)
-        #    for cnt in countFileKind.keys():
-        #        countFileKind[cnt]=countFileKind[cnt]+1
 
 	dead=0
-	#print(dead,len(tasks))
 	for tid,tproc in tasks.items():
 		##check status of the task
+		#if on hold it means it has been created during previous loop and has to be launched
 		if(tasks[tid]['status'] == 'hold'):
                 	launcher=launchExpe(tasks[tid]['filename'])
 			out, err = launcher.communicate()
@@ -204,6 +189,7 @@ if __name__ == '__main__' :
 			    logging.warning('probleme while launching the job')
 
 	       	#if the task is running (meaning a greasy job has been launched) we check if the job is still running
+		# by looking at its status in the queue
 	       	if(tasks[tid]['status'] == 'running'):
 			command=""
 			if(os.getenv('BSC_MACHINE') == 'mn4'):
@@ -214,6 +200,7 @@ if __name__ == '__main__' :
 					logging.warning("taks "+tasks[tid]['remote_id']+"seems dead")
 					tasks[tid]['status']="dead"
 		
+		##in every other case it means that the task ended so we should move on and start a new one
 	       	if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
 			dead+=1	
 
