@@ -149,7 +149,7 @@ if __name__ == '__main__' :
     try:
         jobid+="_"+os.getenv("SLURM_JOBID")
     except:
-	logging.warning('not a slurm job')
+	print('not a slurm job')
 
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
