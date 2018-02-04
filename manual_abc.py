@@ -88,7 +88,7 @@ def writeNupdate(tmp_pdict):
         tasks[taskid]={}
         tasks[taskid]['filename']=taskfilename
         tasks[taskid]['status']='hold'
-	print(tasks)
+	logging.debug(tasks)
 
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that from the ABC
@@ -170,36 +170,52 @@ if __name__ == '__main__' :
 	    logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
 
         tsks=list(tasks.keys())
-        if(len(tsks)>0):
-            logging.info(tsks)
-            for l in tsks:
-                launcher=launchExpe(tasks[l]['filename'])
-		out, err = launcher.communicate()
-		taskid="task-"
-		print(tasks)
-		print(out,err)
-	 	try:
-		    taskid+=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
-		except:
-		    logging.warning("Task ID not found")
-                tasks.pop(l,None)
-            for cnt in countFileKind.keys():
-                countFileKind[cnt]=countFileKind[cnt]+1
-	#for tid,tproc in tasks.item():
-	#	if(tasks[tid]['status'] == 'hold'):
-        #        	launcher=launchExpe(tasks[l]['filename'])
-	#		out, err = launcher.communicate()
-	#		taskid="task-"
-	#		print(tasks)
-	#		print(out,err)
-	# 		try:
-	#		    taskid+=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
-	#		except:
-	#		    logging.warning("Task ID not found")
-			    
-			    
-			
+        #if(len(tsks)>0):
+        #    logging.info(tsks)
+        #    for l in tsks:
+        #        launcher=launchExpe(tasks[l]['filename'])
+	#	out, err = launcher.communicate()
+	#	taskid="task-"
+	#	print(tasks)
+	#	print(out,err)
+	# 	try:
+	#	    taskid+=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+	#	except:
+	#	    logging.warning("Task ID not found")
+        #        tasks.pop(l,None)
+        #    for cnt in countFileKind.keys():
+        #        countFileKind[cnt]=countFileKind[cnt]+1
 
+	dead=0
+	#print(dead,len(tasks))
+	for tid,tproc in tasks.items():
+		##check status of the task
+		if(tasks[tid]['status'] == 'hold'):
+                	launcher=launchExpe(tasks[tid]['filename'])
+			out, err = launcher.communicate()
+			logging.info(out)
+	 		try:
+			    remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+			    tasks[tid]['status'] = 'running'
+			    tasks[tid]['remote_id'] = remote_id
+			except:
+			    logging.warning("Task ID not found")
+			    tasks[tid]['status'] = 'error'
+			    logging.warning('probleme while launching the job')
+
+	       	#if the task is running (meaning a greasy job has been launched) we check if the job is still running
+	       	if(tasks[tid]['status'] == 'running'):
+			command=""
+			if(os.getenv('BSC_MACHINE') == 'mn4'):
+				    command += "squeue -h -j"+tasks[tid]['remote_id']
+    				    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+				    out, err = process.communicate()
+				    if(out == ''):
+					logging.warning("taks "+tasks[tid]['remote_id']+"seems dead")
+					tasks[tid]['status']="dead"
+		
+	       	if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
+			dead+=1	
 
         ##update the pool of particule given their score if the experiment has finished
         tmp_keys=list(tmp_pdict.keys())
@@ -214,8 +230,9 @@ if __name__ == '__main__' :
                     pdict[tmp_exp.getId()]=tmp_exp.score
                     tmp_pdict.pop(t,None)
 
-        #the pool is empty : all simulation finished and we have not yet enough particle
-        if(len(tmp_pdict) == 0 and len(pdict)<numParticule): 
+        #(the pool is empty ) all simulation finished and we have not yet enough particle
+        if(len(pdict) < numParticule and dead == len(tasks)): 
+	    logging.info("regenerate new taskfiles")
             ###re-initialize pool
             tmp_pdict=genTestPool(numproc,pref)
             writeNupdate(tmp_pdict)
