@@ -60,7 +60,7 @@ class Experiment:
         #soup.numSteps['value']=str(int(self.params[indices['cstep']])*3*100)
         #soup.numSteps['serializeResolution']=int(soup.numSteps['value'])
         soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
-        soup.events['rate']=int(self.params[indices['nstep']])/(6*int(self.params[indices['cstep']]))
+        soup.events['rate']=int(self.params[indices['nstep']])/(10*int(self.params[indices['cstep']]))
 
 
         #TODO .createFolder()
@@ -120,7 +120,7 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-	n_years=5
+	n_years=10
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
         bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+'\n'
