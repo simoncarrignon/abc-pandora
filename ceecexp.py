@@ -105,7 +105,7 @@ class Experiment:
 		try:
                  	self.score=float(file_score.readline().strip())
 		except :
-            		logging.debug("score in a bad format")
+            		logging.warning("score in a bad format")
 	
         except IOError:
             logging.debug(str(self)+" still loading")
@@ -133,6 +133,15 @@ class Experiment:
         try:
             rmtree(self.particleDirectory)
             logging.info("rm:"+self.expId+",score was:"+str(self.score))
+        except Exception as e:
+            print(e)
+
+    #generate a string that countain the command that should be run on marenostrum
+    def clean(self):
+        try:
+            rmtree(self.particleDirectory+"/data")
+            rmtree(self.particleDirectory+"/logs")
+            logging.debug("removed "+self.expId+" logs and data")
         except Exception as e:
             print(e)
 
