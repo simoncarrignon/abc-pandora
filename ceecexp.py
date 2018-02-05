@@ -32,7 +32,7 @@ class Experiment:
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
            (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
-           (self.params[indices['nstep']]/(self.params[indices['cstep']]*3) < 10 ) or #not enough cultural step to extract meaningful information
+           (self.params[indices['nstep']]/(self.params[indices['cstep']]*3) < 249 ) or #not enough cultural step to extract meaningful information
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
@@ -49,18 +49,14 @@ class Experiment:
         ##TODO .updateConfig()
         ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
 
-        #soup.goods['num']=str(int(self.params[indices['ngoods']]))
-        #soup.numAgents['value']=str(int(self.params[indices['ngoods']])*int(self.params[indices['nag_good']]))
-        #soup.market['size']=str(self.params[indices['market_size']])
+        soup.numAgents['value']=500
         soup.culture['step']=str(int(self.params[indices['cstep']]))
         soup.culture['mutation']=str(self.params[indices['mu']])
         soup.culture['mumax']=str(self.params[indices['mumax']])
         soup.culture['copy']=str(self.params[indices['copy']])
-        soup.numSteps['value']=int(self.params[indices['nstep']])*3
-        #soup.numSteps['value']=str(int(self.params[indices['cstep']])*3*100)
-        #soup.numSteps['serializeResolution']=int(soup.numSteps['value'])
+        soup.numSteps['value']=int(self.params[indices['nstep']])*3 #
         soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
-        soup.events['rate']=soup.numSteps['value']int(self.params[indices['nstep']])*3/(10*int(self.params[indices['cstep']]))
+        soup.events['rate']=int(self.params[indices['nstep']])/(6*int(self.params[indices['cstep']]) )
 
 
         #TODO .createFolder()
@@ -120,14 +116,13 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-	n_years=10
+	n_years=50
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
         bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+'\n'
         #bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
         
-    
     #remove the entire folder of the particul
     def remove(self):
         try:
