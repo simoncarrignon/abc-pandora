@@ -99,13 +99,13 @@ class Experiment:
     #check if the score exist and return it, fi not return -1
     def gatherScore(self):
         filename_score=os.path.join(self.particleDirectory,"score.txt")
-        time.sleep(.001)
         try:
             with open(filename_score,"r") as file_score:
 		try:
                  	self.score=float(file_score.readline().strip())
 		except :
             		logging.warning("score in a bad format")
+		self.clean()
 	
         except IOError:
             logging.debug(str(self)+" still loading")
@@ -128,7 +128,7 @@ class Experiment:
         return bashCommand
         
     
-    #generate a string that countain the command that should be run on marenostrum
+    #remove the entire folder of the particul
     def remove(self):
         try:
             rmtree(self.particleDirectory)
@@ -136,7 +136,7 @@ class Experiment:
         except Exception as e:
             print(e)
 
-    #generate a string that countain the command that should be run on marenostrum
+    #clean useless folder 
     def clean(self):
         try:
             rmtree(self.particleDirectory+"/data")
@@ -145,7 +145,7 @@ class Experiment:
         except Exception as e:
             print(e)
 
-    #generate a string that countain the command that should be run on marenostrum
+    #move the particule forlder
     def softRemove(self):
         try:
             rmtree(self.particleDirectory)
@@ -154,6 +154,5 @@ class Experiment:
             print(e)
 
 
-        
     
 
