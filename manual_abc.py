@@ -36,7 +36,7 @@ class TophatPrior(object):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,0.5,0,750,1],[1,15,10,7500,30])
+        priors = TophatPrior([0,0.5,0,250,1],[1,15,10,2500,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
 	while(not one.consistence):
