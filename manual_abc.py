@@ -197,7 +197,7 @@ if __name__ == '__main__' :
     				    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
 				    out, err = process.communicate()
 				    if(out == ''):
-					logging.warning("taks "+tasks[tid]['remote_id']+"seems dead")
+					logging.warning("taks "+tasks[tid]['remote_id']+" not running")
 					tasks[tid]['status']="dead"
 		
 		##in every other case it means that the task ended so we should move on and start a new one
@@ -226,3 +226,11 @@ if __name__ == '__main__' :
             ##findFileneNameAndUpdateCounter
             #Launch remaining tasks
     writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
+    logging.info('send cancel signal to remaining tasks')
+    for tid,tproc in tasks.items():
+	if(tasks[tid]['status'] == 'running'):
+	    command="scancel "+tasks[tid]['remote_id']
+	    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+	    out, err = process.communicate()
+	    logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
+    logging.info('ABC done for epsilon'+str(epsilon))
