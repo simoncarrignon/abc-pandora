@@ -36,7 +36,7 @@ class TophatPrior(object):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,0.5,0,250,1],[1,15,10,2500,30])
+        priors = TophatPrior([0,0.5,0,250,1],[1,15,10,500,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
 	while(not one.consistence):
@@ -93,7 +93,7 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that from the ABC
 def launchExpe(taskfile):
-    time="00:05:00"
+    time="00:15:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
         command = "bash 2mn4.sh"
     if(os.getenv('BSC_MACHINE') == 'nord3'):
@@ -233,4 +233,4 @@ if __name__ == '__main__' :
 	    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
 	    out, err = process.communicate()
 	    logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
-    logging.info('ABC done for epsilon'+str(epsilon))
+    logging.info('ABC done for epsilon='+str(epsilon))

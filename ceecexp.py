@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup as bs
 import os,time,sys,logging
 from shutil import rmtree
+import subprocess
 #index of the different parameters
 indices= {  "mu"            : 0, 
             "mumax"        : 1,
@@ -32,7 +33,7 @@ class Experiment:
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
            (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
-           (self.params[indices['nstep']]/(self.params[indices['cstep']]*3) < 249 ) or #not enough cultural step to extract meaningful information
+           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < 80 ) or #not enough cultural step to extract meaningful information
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
@@ -49,14 +50,14 @@ class Experiment:
         ##TODO .updateConfig()
         ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
 
-        soup.numAgents['value']=500
+        soup.numAgents['value']=250
         soup.culture['step']=str(int(self.params[indices['cstep']]))
         soup.culture['mutation']=str(self.params[indices['mu']])
         soup.culture['mumax']=str(self.params[indices['mumax']])
         soup.culture['copy']=str(self.params[indices['copy']])
         soup.numSteps['value']=int(self.params[indices['nstep']])*3 #
         soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
-        soup.events['rate']=int(self.params[indices['nstep']])/(6*int(self.params[indices['cstep']]) )
+        soup.events['rate']=int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) )
 
 
         #TODO .createFolder()
@@ -126,7 +127,7 @@ class Experiment:
     #remove the entire folder of the particul
     def remove(self):
         try:
-            rmtree(self.particleDirectory)
+            subprocess.Popen(["rm","-rf",self.particleDirectory])
             logging.info("rm:"+self.expId+",score was:"+str(self.score))
         except Exception as e:
             print(e)
