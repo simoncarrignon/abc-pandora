@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup as bs
 import os,time,sys,logging
 from shutil import rmtree
 import subprocess
+
 #index of the different parameters
 indices= {  "mu"            : 0, 
             "mumax"        : 1,
@@ -14,6 +15,14 @@ order = 'nstep'+sep+'cstep'+sep+'mu'+sep+'mumax'+sep+'copy'
 ##Check consistency of paramter
 ##generate the folders and files for the xp
 class Experiment: 
+    """
+    Experiment
+    
+    :param params: scalar or array  parameters
+    :param binpath: the path wher eis stored config file and executable
+    :param outpath: path where will be stored expe config and outputfiles
+    """
+    
     def __init__(self, params,binpath,outpath, prefId=""):
         self.consistence=True
         self.params = params
@@ -44,7 +53,7 @@ class Experiment:
 
         soup = bs(open(self.binpath+"/config.xml"),'xml') #read a generic config file ##need lxml installed
         
-        self.kind=str(int(round(params[1]/1000)*1000))
+        self.kind=str(int(round(params[indices['nstep']]/1000)*1000))
 
 
         ##TODO .updateConfig()
@@ -112,7 +121,7 @@ class Experiment:
         return(self.score)
 
     def __str__(self):
-        result = 'experiment: '+str(self.expId)#+' alpha: '+str('%.2f')%self.alpha+' beta: '+str('%.2f')%self.beta+' harbour bonus: '+str('%.2f')%self.harbourBonus
+        result = 'experiment: '+str(self.expId)+' of kind:'+self.kind
         return result
 
     #generate a string that countain the command that should be run on marenostrum
@@ -137,7 +146,7 @@ class Experiment:
         try:
             rmtree(self.particleDirectory+"/data")
             rmtree(self.particleDirectory+"/logs")
-            logging.debug("removed "+self.expId+" logs and data")
+            logging.debug("cleaned "+self.expId+" logs and data")
         except Exception as e:
             print(e)
 
@@ -148,7 +157,3 @@ class Experiment:
             logging.info("soft rm:"+self.expId+",score was:"+str(self.score))
         except Exception as e:
             print(e)
-
-
-    
-
