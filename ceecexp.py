@@ -144,8 +144,8 @@ class Experiment:
     #clean useless folder 
     def clean(self):
         try:
-            subprocess.Popen(["rm","-rf",os.path.join(self.particleDirectory,"logs"])
-            subprocess.Popen(["rm","-rf",os.path.join(self.particleDirectory,"data"])
+            subprocess.Popen(["rm","-rf",os.path.join(self.particleDirectory,"logs")])
+            subprocess.Popen(["rm","-rf",os.path.join(self.particleDirectory,"data")])
             logging.debug("cleaned "+self.expId+" logs and data")
         except Exception as e:
             print(e)
