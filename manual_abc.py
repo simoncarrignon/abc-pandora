@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+#TODO : a Class Launcher and a Class Tasks (a class task being a set of experiments , a class launcher an abstract class implemented for each architecture (MN[3-4]/LAPTOP/HSELDON...)
 
 import csv, math, sys, argparse, random,os,errno,re
 import numpy as np
@@ -36,7 +37,7 @@ class TophatPrior(object):
 def genTestPool(size,pref):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,0.5,0,250,1],[1,15,10,500,30])
+        priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
 	while(not one.consistence):
@@ -85,13 +86,15 @@ def writeNupdate(tmp_pdict):
         with open(taskfilename,'a') as tskf:
             tskf.write(task)
 
+	#TODO task should be handled as object
         tasks[taskid]={}
         tasks[taskid]['filename']=taskfilename
         tasks[taskid]['status']='hold'
+        tasks[taskid]['kind']=kind
 	logging.debug(tasks)
 
 ###launch batch of experiments given the machine used
-#TODO a real class "launcher" that can abstract that from the ABC
+#TODO a real class "launcher" that can abstract that for the ABC
 def launchExpe(taskfile):
     time="00:15:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
