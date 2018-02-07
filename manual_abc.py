@@ -200,7 +200,7 @@ if __name__ == '__main__' :
     				    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
 				    out, err = process.communicate()
 				    if(out == ''):
-					logging.warning("taks "+tasks[tid]['remote_id']+" not running")
+					logging.warning("task "+tasks[tid]['remote_id']+" not running")
 					tasks[tid]['status']="dead"
 		
 		##in every other case it means that the task ended so we should move on and start a new one
