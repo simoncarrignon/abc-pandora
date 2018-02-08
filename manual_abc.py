@@ -6,31 +6,9 @@ import numpy as np
 import logging
 import time
 import subprocess
+from sampler import TophatPrior
 from ceecexp import Experiment
 from ceecexp import order
-
-class TophatPrior(object):
-    """
-    Tophat prior
-    
-    :param min: scalar or array of min values
-    :param max: scalar or array of max values
-    """
-    
-    def __init__(self, min, max):
-        self.min = np.atleast_1d(min)
-        self.max = np.atleast_1d(max)
-        self._random = np.random.mtrand.RandomState()
-        assert self.min.shape == self.max.shape
-        assert np.all(self.min < self.max)
-        
-    def __call__(self, theta=None):
-        if theta is None:
-            return np.array([self._random.uniform(mi, ma) for (mi, ma) in zip(self.min, self.max)])
-        else:
-            return 1 if np.all(theta < self.max) and np.all(theta >= self.min) else 0
-
-
 
 
 #generate a pool of experiment of size `size` that will be stored in the folder `pref`
