@@ -34,10 +34,9 @@ class TophatPrior(object):
 
 
 #generate a pool of experiment of size `size` that will be stored in the folder `pref`
-def genTestPool(size,pref):
+def genTestPool(size,pref,priors):
     pool_exp={}
     for p in range(size):
-        priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
 	while(not one.consistence):
@@ -157,7 +156,8 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
    
-    tmp_pdict=genTestPool(numproc,pref)
+    priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
+    tmp_pdict=genTestPool(numproc,pref,priors)
 
     ###initialize pool
     writeNupdate(tmp_pdict)
