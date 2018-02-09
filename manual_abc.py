@@ -160,7 +160,7 @@ if __name__ == '__main__' :
     tmp_pdict=genTestPool(numproc,pref)
 
     with open("tmp_res.csv",'a') as tmp_out:
-	tmp_out.write("id","score")
+	tmp_out.write("id"+"score\n")
 
     ###initialize pool
     writeNupdate(tmp_pdict)
@@ -221,7 +221,7 @@ if __name__ == '__main__' :
                     tmp_pdict.pop(t,None)
                 else:
 		    with open("tmp_res.csv",'a') as tmp_out:
-			tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score))
+			tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
                     pdict[tmp_exp.getId()]=tmp_exp.score
                     tmp_pdict.pop(t,None)
 
