@@ -159,7 +159,7 @@ if __name__ == '__main__' :
    
     tmp_pdict=genTestPool(numproc,pref)
 
-    with open("tmp_res.csv",'a') as tmp_out:
+    with open("tmp_res.csv",'w') as tmp_out:
 	tmp_out.write("id"+"score\n")
 
     ###initialize pool
