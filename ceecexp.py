@@ -23,7 +23,13 @@ class Experiment:
     :param outpath: path where will be stored expe config and outputfiles
     """
     
-    def __init__(self, params,binpath,outpath, prefId=""):
+    def __init__(self, params,outpath, prefId=""):
+        binpath=""
+        if(os.getenv('BSC_MACHINE')):
+            binpath="/home/bsc21/bsc21394/ceeculture/"
+        else:
+            binpath="/home/scarrign/ceeculture/"
+
         self.consistence=True
         self.params = params
         #self.expId = "_".join([str(int(self.params[indices['ngoods']])),str(int(self.params[indices['nag_good']])),str(self.params[indices['market_size']]),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])

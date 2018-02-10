@@ -39,10 +39,10 @@ def genTestPool(size,pref):
     for p in range(size):
         priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
         params=priors()
-        one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
-	while(not one.consistence):
+        one=Experiment(params,pref)
+        while(not one.consistence):
             params=priors()
-	    one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
+	    one=Experiment(params,pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
 
