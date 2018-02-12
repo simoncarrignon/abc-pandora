@@ -16,10 +16,10 @@ def genTestPool(size,pref,priors):
     pool_exp={}
     for p in range(size):
         params=priors()
-        one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
-	while(not one.consistence):
+        one=Experiment(params,pref)
+        while(not one.consistence):
             params=priors()
-	    one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
+	    one=Experiment(params,pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
 
@@ -137,6 +137,9 @@ if __name__ == '__main__' :
     priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
     tmp_pdict=genTestPool(numproc,pref,priors)
 
+    with open("tmp_res.csv",'w') as tmp_out:
+	tmp_out.write("id"+"score\n")
+
     ###initialize pool
     writeNupdate(tmp_pdict)
 
@@ -195,6 +198,8 @@ if __name__ == '__main__' :
                     tmp_exp.remove()
                     tmp_pdict.pop(t,None)
                 else:
+		    with open("tmp_res.csv",'a') as tmp_out:
+			tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
                     pdict[tmp_exp.getId()]=tmp_exp.score
                     tmp_pdict.pop(t,None)
 

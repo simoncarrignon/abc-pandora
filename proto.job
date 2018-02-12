@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=TASKDIR/JNAME
+#SBATCH --job-name=test
 #SBATCH --output=TASKDIR/JNAME-%j.out
 #SBATCH --error=TASKDIR/JNAME-%j.err
 #SBATCH --ntasks=NTASKS
