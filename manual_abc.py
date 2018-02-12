@@ -33,10 +33,10 @@ class TophatPrior(object):
 
 
 
-#generate a pool of experiment of size `size` that will be stored in the folder `pref`
-def genTestPool(size,pref):
+#generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
+def genTestPool(N,pref):
     pool_exp={}
-    for p in range(size):
+    for p in range(N):
         priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
         params=priors()
         one=Experiment(params,"/home/bsc21/bsc21394/ceeculture/",pref)
@@ -52,6 +52,7 @@ def genTestPool(size,pref):
 def writeNupdate(tmp_pdict):
 
     ###ALL that would  be  really  nicer if ABC was an object 
+    ###and wrapper to
     global countExpKind
     global countFileKind
     global tasks
@@ -146,8 +147,8 @@ if __name__ == '__main__' :
 
     orign=os.getcwd() #original workind directory
     
-    pref="eps_"+str(epsilon)
-    jobid="mother_"
+    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+    jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
     try:
         jobid+="_"+os.getenv("SLURM_JOBID")
