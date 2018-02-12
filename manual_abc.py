@@ -25,7 +25,21 @@ def genTestPool(N,pref):
         pool_exp[one.getId()]=one
     return(pool_exp)
 
-#generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
+def rawMatricesFromPool(pool):
+    rawmat={}
+    rawmat["scores"]=[]
+    rawmat["sigma"]=1
+    rawmat["thetas"]=[]
+    for exp in pool.values():
+        rawmat["scores"].append(1.0/numParticule)
+        rawmat["thetas"].append(np.array(exp.params))
+
+    rawmat["scores"]=np.asarray(rawmat["scores"])
+    rawmat["thetas"]=np.asarray(rawmat["thetas"])
+    rawmat["sigma"]=weighted_cov(rawmat["thetas"],rawmat["scores"])
+    return(rawmat)
+
+#recreate a subset of N experiments with paramters drawn from distribution of poldpool
 def renewPool(N,pref,oldpool):
     pool_exp={}
     for p in range(N):
@@ -136,19 +150,16 @@ def writeParticules(particules,epsi,outfilename):
 
 if __name__ == '__main__' :
     pdict={}     #list of score for each exp
+    newpool={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
     countFileKind={} #number of tasksfile for each different "kind" 
     tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
-
-    tmp_pdict={} #pool of particules
+    tmp_pdict={} #temporary pool of particules
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
     epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
-
-    orign=os.getcwd() #original workind directory
-
-    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+    orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
     try:
@@ -156,112 +167,106 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
+    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
 
     tmp_pdict=genTestPool(numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
+    for i in range(1):
+        oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
+        
+        with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
+            tmp_out.write("id"+"score\n")
 
-    oldpool={} #oldpool will store only np.array equivalent to the raw data in genTestPool
-    oldpool["scores"]=[]
-    oldpool["sigma"]=1
-    oldpool["thetas"]=[]
-    for exp in tmp_pdict.values():
-        oldpool["scores"].append(1.0/numParticule)
-        oldpool["thetas"].append(np.array(exp.params))
+        ###initialize pool
+        writeNupdate(tmp_pdict)
 
-    oldpool["scores"]=np.asarray(oldpool["scores"])
-    oldpool["thetas"]=np.asarray(oldpool["thetas"])
-    oldpool["sigma"]=weighted_cov(oldpool["thetas"],oldpool["scores"])
-    print(oldpool)
+        ##findFileneNameAndUpdateCounter
+        #Launch remaining tasks
 
-    with open("tmp_res.csv",'w') as tmp_out:
-        tmp_out.write("id"+"score\n")
+        oldlen=0
+        while(len(pdict) < numParticule):
 
-    ###initialize pool
-    writeNupdate(tmp_pdict)
+            if(len(pdict)>oldlen): ##logging only if new particules found
+                oldlen=len(pdict)
+                logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
 
-    ##findFileneNameAndUpdateCounter
-    #Launch remaining tasks
+            tsks=list(tasks.keys())
 
-    oldlen=0
-    while(len(pdict) < numParticule):
+            dead=0
+            for tid,tproc in tasks.items():
+                ##check status of the task
+                #if on hold it means it has been created during previous loop and has to be launched
+                if(tasks[tid]['status'] == 'hold'):
+                    launcher=launchExpe(tasks[tid]['filename'])
+                    out, err = launcher.communicate()
+                    logging.info(out)
+                    try:
+                        remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+                        tasks[tid]['status'] = 'running'
+                        tasks[tid]['remote_id'] = remote_id
+                    except:
+                        logging.warning("Task ID not found")
+                        tasks[tid]['status'] = 'running'
+                        logging.warning('probleme while launching the job')
 
-        if(len(pdict)>oldlen): ##logging only if new particules found
-            oldlen=len(pdict)
-            logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
+                       #if the task is running (meaning a greasy job has been launched) we check if the job is still running
+                # by looking at its status in the queue
+                    if(tasks[tid]['status'] == 'running'):
+                        command=""
+                        if(os.getenv('BSC_MACHINE') == 'mn4'):
+                            command += "squeue -h -j"+tasks[tid]['remote_id']
+                            process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+                            out, err = process.communicate()
+                            if(out == ''):
+                                logging.warning("task "+tasks[tid]['remote_id']+" not running")
+                                tasks[tid]['status']="dead"
+                    if(os.getenv('BSC_MACHINE') == None):
+                                tasks[tid]['status']="dead"
+                                print(str(dead))
+                                
 
-        tsks=list(tasks.keys())
+                
+                ##in every other case it means that the task ended so we should move on and start a new one
+                    if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
+                        dead+=1    
 
-        dead=0
+            ##update the pool of particule given their score if the experiment has finished
+            tmp_keys=list(tmp_pdict.keys())
+            for t in tmp_keys:
+                tmp_exp=tmp_pdict[t]
+                tmp_exp.gatherScore()
+                if(tmp_exp.score>0):
+                    if(tmp_exp.score > epsilon):
+                        tmp_exp.remove()
+                        tmp_pdict.pop(t,None)
+                    else:
+                        with open("tmp_res.csv",'a') as tmp_out:
+                            tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
+                        pdict[tmp_exp.getId()]=tmp_exp.score
+                        newpool[tmp_exp.getId()]=tmp_exp
+                        tmp_pdict.pop(t,None)
+
+            #(the pool is empty ) all simulation finished and we have not yet enough particle
+            #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
+            if(len(pdict) < numParticule and dead == len(tasks)): 
+                logging.info("regenerate new taskfiles")
+                ###re-initialize pool
+                tmp_pdict=renewPool(numproc,pref,oldpool)
+                writeNupdate(tmp_pdict)
+                ##findFileneNameAndUpdateCounter
+                #Launch remaining tasks
+
+
+        writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
+        logging.info('send cancel signal to remaining tasks')
         for tid,tproc in tasks.items():
-            ##check status of the task
-            #if on hold it means it has been created during previous loop and has to be launched
-            if(tasks[tid]['status'] == 'hold'):
-                launcher=launchExpe(tasks[tid]['filename'])
-                out, err = launcher.communicate()
-                logging.info(out)
-                try:
-                    remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
-                    tasks[tid]['status'] = 'running'
-                    tasks[tid]['remote_id'] = remote_id
-                except:
-                    logging.warning("Task ID not found")
-                    tasks[tid]['status'] = 'running'
-                    logging.warning('probleme while launching the job')
-
-                   #if the task is running (meaning a greasy job has been launched) we check if the job is still running
-            # by looking at its status in the queue
-                if(tasks[tid]['status'] == 'running'):
-                    command=""
-                    if(os.getenv('BSC_MACHINE') == 'mn4'):
-                        command += "squeue -h -j"+tasks[tid]['remote_id']
-                        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-                        out, err = process.communicate()
-                        if(out == ''):
-                            logging.warning("task "+tasks[tid]['remote_id']+" not running")
-                            tasks[tid]['status']="dead"
-                if(os.getenv('BSC_MACHINE') == None):
-                            tasks[tid]['status']="dead"
-                            print(str(dead))
-                            
-
-            
-            ##in every other case it means that the task ended so we should move on and start a new one
-                if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
-                    dead+=1    
-
-        ##update the pool of particule given their score if the experiment has finished
-        tmp_keys=list(tmp_pdict.keys())
-        for t in tmp_keys:
-            tmp_exp=tmp_pdict[t]
-            tmp_exp.gatherScore()
-            if(tmp_exp.score>0):
-                if(tmp_exp.score > epsilon):
-                    tmp_exp.remove()
-                    tmp_pdict.pop(t,None)
-                else:
-                    with open("tmp_res.csv",'a') as tmp_out:
-                        tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
-                    pdict[tmp_exp.getId()]=tmp_exp.score
-                    tmp_pdict.pop(t,None)
-
-        #(the pool is empty ) all simulation finished and we have not yet enough particle
-        #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
-        if(len(pdict) < numParticule and dead == len(tasks)): 
-            logging.info("regenerate new taskfiles")
-            ###re-initialize pool
-            tmp_pdict=renewPool(numproc,pref,oldpool)
-            writeNupdate(tmp_pdict)
-            ##findFileneNameAndUpdateCounter
-            #Launch remaining tasks
-
-
-    writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
-    logging.info('send cancel signal to remaining tasks')
-    for tid,tproc in tasks.items():
-        if(tasks[tid]['status'] == 'running'):
-            command="scancel "+tasks[tid]['remote_id']
-            process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-            out, err = process.communicate()
-            logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
-    logging.info('ABC done for epsilon='+str(epsilon))
+            if(tasks[tid]['status'] == 'running'):
+                command="scancel "+tasks[tid]['remote_id']
+                process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+                out, err = process.communicate()
+                logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
+        logging.info('ABC done for epsilon='+str(epsilon))
+        epsilon=epsilon-0.01
+        tmp_pdict=newpool
