@@ -57,50 +57,51 @@ class Experiment:
             #print("baddd",params)
             self.consistence=False
 
-        soup = bs(open(self.binpath+"/config.xml"),'xml') #read a generic config file ##need lxml installed
-        
-        self.kind=str(int(round(params[indices['nstep']]/1000)*1000))
-
-
-        ##TODO .updateConfig()
-        ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
-
-        soup.numAgents['value']=250
-        soup.culture['step']=str(int(self.params[indices['cstep']]))
-        soup.culture['mutation']=str(self.params[indices['mu']])
-        soup.culture['mumax']=str(self.params[indices['mumax']])
-        soup.culture['copy']=str(self.params[indices['copy']])
-        soup.numSteps['value']=int(self.params[indices['nstep']])*3 #
-        soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
-        soup.events['rate']=int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) )
-
-
-        #TODO .createFolder()
-        #create a directory to run experiment associated to this particle
-        self.particleDirectory=os.path.join(self.outpath,self.expId)
-        
-
-        #print("config_"+str(self.expId)+".xml")
-        if (not os.path.isdir(self.particleDirectory)) and self.consistence:
-            os.makedirs(self.particleDirectory) #create folder for the exp
-            os.mkdir(os.path.join(self.particleDirectory,"logs"))
-            os.mkdir(os.path.join(self.particleDirectory,"data"))
-    	    if(os.getenv('BSC_MACHINE') == 'mn4'):
-                os.symlink(self.binpath+"/build/ceec",self.particleDirectory+ "/province") 
-            	os.symlink(self.binpath+"/AnalyseTools/build/analysis",self.particleDirectory+ "/analysis") 
-    	    if(os.getenv('BSC_MACHINE') == 'nord3'):
-                os.symlink(self.binpath+"/province",self.particleDirectory+ "/province") 
-            	os.symlink(self.binpath+"/AnalyseTools/analysis",self.particleDirectory+ "/analysis") 
-
-            with open(self.particleDirectory+"/config.xml","a") as out:
-                out.write(soup.prettify())
-                out.close()
         else:
-            if (os.path.isdir(self.particleDirectory)):  
-                logging.warning( "particle already tested")  
+            soup = bs(open(self.binpath+"/config.xml"),'xml') #read a generic config file ##need lxml installed
+            
+            self.kind=str(int(round(params[indices['nstep']]/1000)*1000))
+
+
+            ##TODO .updateConfig()
+            ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
+
+            soup.numAgents['value']=250
+            soup.culture['step']=str(int(self.params[indices['cstep']]))
+            soup.culture['mutation']=str(self.params[indices['mu']])
+            soup.culture['mumax']=str(self.params[indices['mumax']])
+            soup.culture['copy']=str(self.params[indices['copy']])
+            soup.numSteps['value']=int(self.params[indices['nstep']])*3 #
+            soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
+            soup.events['rate']=int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) )
+
+
+            #TODO .createFolder()
+            #create a directory to run experiment associated to this particle
+            self.particleDirectory=os.path.join(self.outpath,self.expId)
+            
+
+            #print("config_"+str(self.expId)+".xml")
+            if (not os.path.isdir(self.particleDirectory)) and self.consistence:
+                os.makedirs(self.particleDirectory) #create folder for the exp
+                os.mkdir(os.path.join(self.particleDirectory,"logs"))
+                os.mkdir(os.path.join(self.particleDirectory,"data"))
+    	        if(os.getenv('BSC_MACHINE') == 'mn4'):
+                    os.symlink(self.binpath+"/build/ceec",self.particleDirectory+ "/province") 
+                    os.symlink(self.binpath+"/AnalyseTools/build/analysis",self.particleDirectory+ "/analysis") 
+    	        if(os.getenv('BSC_MACHINE') == 'nord3'):
+                    os.symlink(self.binpath+"/province",self.particleDirectory+ "/province") 
+                    os.symlink(self.binpath+"/AnalyseTools/analysis",self.particleDirectory+ "/analysis") 
+
+                with open(self.particleDirectory+"/config.xml","a") as out:
+                    out.write(soup.prettify())
+                    out.close()
             else:
-                logging.warning( "unconsistent particle")  
-            self.consistence=False
+                if (os.path.isdir(self.particleDirectory)):  
+                    logging.warning( "particle already tested")  
+                else:
+                    logging.warning( "unconsistent particle")  
+                self.consistence=False
 
     def getKind(self):
         return(self.kind)
