@@ -36,7 +36,7 @@ def rawMatricesFromPool(pool):
 
     rawmat["scores"]=np.asarray(rawmat["scores"])
     rawmat["thetas"]=np.asarray(rawmat["thetas"])
-    rawmat["sigma"]=weighted_cov(rawmat["thetas"],rawmat["scores"])
+    rawmat["sigma"]=2 * weighted_cov(rawmat["thetas"],rawmat["scores"])
     return(rawmat)
 
 #recreate a subset of N experiments with paramters drawn from distribution of poldpool
@@ -270,3 +270,4 @@ if __name__ == '__main__' :
         logging.info('ABC done for epsilon='+str(epsilon))
         epsilon=epsilon-0.01
         tmp_pdict=newpool
+        print(tmp_pdict)
