@@ -43,14 +43,14 @@ def rawMatricesFromPool(pool):
 def renewPool(N,pref,oldpool):
     pool_exp={}
     for p in range(N):
-        idx = np.random.choice(range(N), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
+        idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
         theta = oldpool["thetas"][idx]
         sigma = oldpool["sigma"]
         params = np.random.multivariate_normal(theta, sigma)
         print("lafuente:"+str(params))
         one=Experiment(params,pref)
         while(not one.consistence):
-            idx = np.random.choice(range(N), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
+            idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
             theta = oldpool["thetas"][idx]
             sigma = oldpool["sigma"]
             params = np.random.multivariate_normal(theta, sigma)
@@ -243,7 +243,7 @@ if __name__ == '__main__' :
                         tmp_exp.remove()
                         tmp_pdict.pop(t,None)
                     else:
-                        with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
+                        with open("tmp_res"+str(epsilon)+".csv",'a') as tmp_out:
                             tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
                             tmp_out.close()
                         pdict[tmp_exp.getId()]=tmp_exp.score
@@ -268,7 +268,12 @@ if __name__ == '__main__' :
                 out, err = process.communicate()
                 logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
         logging.info('ABC done for epsilon='+str(epsilon))
-        epsilon=epsilon-0.01
+        epsilon=epsilon - 0.02
         tmp_pdict=newpool
         print(tmp_pdict)
+        pdict={}     #list of score for each exp
+        newpool={}     #list of score for each exp
+        countExpKind={} #number of experiment for each different "kind" 
+        countFileKind={} #number of tasksfile for each different "kind" 
+        tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
 
