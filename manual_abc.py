@@ -15,7 +15,7 @@ from simpleMod  import order
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
 def genTestPool(N,pref):
-    priors = TophatPrior([1,1,1],[50,50,50])
+    priors = TophatPrior([1,1,0],[30,5,.2])
     pool_exp={}
     for p in range(N):
         params=priors()
@@ -249,7 +249,7 @@ if __name__ == '__main__' :
                 s=tmp_exp.gatherScore()
                 #print(str(s))
                 #print(str(Y))
-                tmp_exp.score=np.abs(np.mean(Y)-np.mean(s))
+                tmp_exp.score=np.mean(np.abs(Y-s))
                 if(tmp_exp.score>0):
                     if(tmp_exp.score > epsilon):
                         tmp_exp.remove()
