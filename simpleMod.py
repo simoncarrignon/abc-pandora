@@ -1,12 +1,26 @@
 import os,time,sys,logging
 import numpy as np
+import warnings
+warnings.filterwarnings('error')
 
 sep=","
 
-order = 'mu'+sep+'sd'+sep+'n'
+order = 'mu'+sep+'sd'+sep+'frac'
 
 def genData():
-    return np.random.normal(10,2,60)
+    means=[]
+    stds=[]
+    pop=20.0
+    sd=2
+    mean=10
+    fact=.1
+    for time in range(10):
+        dist=np.random.normal(mean,sd,int(pop))
+        pop=pop+fact*pop
+        print(pop)
+        means.append(dist.mean())
+        stds.append(dist.std())
+    return(np.asarray((np.asarray(means),np.asarray(stds))))
 
 ##Check consistency of paramter
 ##generate the folders and files for the xp
@@ -27,7 +41,7 @@ class Experiment:
         self.data=data
         self.kind=str("a")
         self.consistence=False
-        if(params[2] <= 10. or params[1] <= 0.0):
+        if(params[1] <= 0.0):
             self.consistence=False
         else:
             self.consistence=True
@@ -48,19 +62,31 @@ class Experiment:
         return(self.score)
 
     def __str__(self):
-        result = 'experiment: '+str(self.expId)+' of kind:'+self.kind
+        result = 'experiment: '+str(self.expId)
         return result
 
     ####methods called by launcher
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-        print(self.params)
-        return(np.random.normal(self.params[0],self.params[1],int(self.params[2])))
+        means=[]
+        stds=[]
+        pop=20
+        sd=self.params[1]
+        mean=self.params[0]
+        fact=self.params[2]
+        for time in range(10):
+            dist=np.random.normal(mean,sd,int(pop))
+            means.append(dist.mean())
+            stds.append(dist.std())
+            pop=pop+fact*pop
+            if(pop<1):pop=1
+        return(np.asarray((np.asarray(means),np.asarray(stds))))
 
         
     #remove the entire folder of the particul
     def remove(self):
+        logging.info("useless"+str(self)+",score:"+str(self.score))
         return()
 
     #clean useless folder 
