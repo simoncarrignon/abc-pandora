@@ -14,7 +14,7 @@ from ceecexp import order
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
 def genTestPool(N,pref):
-    priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
+    priors = TophatPrior([0,0.5,0,150,2],[1,15,10,160,8])
     pool_exp={}
     for p in range(N):
         params=priors()
@@ -110,7 +110,7 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that for the ABC
 def launchExpe(taskfile):
-    time="00:15:00"
+    time="00:05:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
         command = "bash 2mn4.sh"
     elif(os.getenv('BSC_MACHINE') == 'nord3'):
@@ -132,7 +132,7 @@ def writeParticules(particules,epsi,outfilename):
         outpart.write(header)
         for eid, score in particules.items():
             thetas=eid.replace("_",",")
-            row=thetas+ sep+ str(score) + sep + str(epsilon)+ "\n"
+            row=thetas+ sep+ str(score) + sep + str(epsi)+ "\n"
             outpart.write(row)
 
 ########################################
@@ -173,11 +173,13 @@ if __name__ == '__main__' :
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
 
     tmp_pdict=genTestPool(numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
-    for i in range(1):
+    for i in range(3):
+        print(str(i) +  ",esp"+str(epsilon))
         oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
-        
+
         with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
             tmp_out.write("id"+"score\n")
+            tmp_out.close()
 
         ###initialize pool
         writeNupdate(tmp_pdict)
@@ -195,6 +197,7 @@ if __name__ == '__main__' :
             tsks=list(tasks.keys())
 
             dead=0
+
             for tid,tproc in tasks.items():
                 ##check status of the task
                 #if on hold it means it has been created during previous loop and has to be launched
@@ -208,29 +211,27 @@ if __name__ == '__main__' :
                         tasks[tid]['remote_id'] = remote_id
                     except:
                         logging.warning("Task ID not found")
-                        tasks[tid]['status'] = 'running'
+                        tasks[tid]['status'] = ''
                         logging.warning('probleme while launching the job')
-
-                       #if the task is running (meaning a greasy job has been launched) we check if the job is still running
-                # by looking at its status in the queue
-                    if(tasks[tid]['status'] == 'running'):
-                        command=""
-                        if(os.getenv('BSC_MACHINE') == 'mn4'):
-                            command += "squeue -h -j"+tasks[tid]['remote_id']
-                            process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-                            out, err = process.communicate()
-                            if(out == ''):
-                                logging.warning("task "+tasks[tid]['remote_id']+" not running")
-                                tasks[tid]['status']="dead"
+                    #if the task is running (meaning a greasy job has been launched) we check if the job is still running
+                    # by looking at its status in the queue
+                if(tasks[tid]['status'] == 'running'):
+                    command=""
+                    if(os.getenv('BSC_MACHINE') == 'mn4'):
+                        command += "squeue -h -j"+tasks[tid]['remote_id']
+                        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+                        out, err = process.communicate()
+                        if(out == ''):
+                            logging.warning("task "+tasks[tid]['remote_id']+" not running")
+                            tasks[tid]['status']="dead"
+                            print("====================")
+                            print(out)
                     if(os.getenv('BSC_MACHINE') == None):
-                                tasks[tid]['status']="dead"
-                                print(str(dead))
-                                
-
-                
+                        tasks[tid]['status']="dead"
+                        print(str(dead))
                 ##in every other case it means that the task ended so we should move on and start a new one
-                    if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
-                        dead+=1    
+                if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
+                        dead+=1
 
             ##update the pool of particule given their score if the experiment has finished
             tmp_keys=list(tmp_pdict.keys())
@@ -242,8 +243,9 @@ if __name__ == '__main__' :
                         tmp_exp.remove()
                         tmp_pdict.pop(t,None)
                     else:
-                        with open("tmp_res.csv",'a') as tmp_out:
+                        with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
                             tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
+                            tmp_out.close()
                         pdict[tmp_exp.getId()]=tmp_exp.score
                         newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
@@ -257,8 +259,6 @@ if __name__ == '__main__' :
                 writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
-
-
         writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
         logging.info('send cancel signal to remaining tasks')
         for tid,tproc in tasks.items():
@@ -271,3 +271,4 @@ if __name__ == '__main__' :
         epsilon=epsilon-0.01
         tmp_pdict=newpool
         print(tmp_pdict)
+
