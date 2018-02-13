@@ -49,14 +49,12 @@ def renewPool(N,pref,oldpool):
         theta = oldpool["thetas"][idx]
         sigma = oldpool["sigma"]
         params = np.random.multivariate_normal(theta, sigma)
-        print("lafuente:"+str(params))
         one=Experiment(params,pref)
         while(not one.consistence):
             idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
             theta = oldpool["thetas"][idx]
             sigma = oldpool["sigma"]
             params = np.random.multivariate_normal(theta, sigma)
-            print("lafuente:"+str(params))
             one=Experiment(params,pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
@@ -162,7 +160,7 @@ if __name__ == '__main__' :
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
-    epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
+    #epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
     orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
@@ -171,7 +169,13 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
-    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+    numeps=4
+    maxeps=20
+    mineps=0.2
+    epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
+
+    pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
+
 
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
@@ -181,11 +185,15 @@ if __name__ == '__main__' :
     isNeedLauncher=False
     
 
-    for i in range(3):
-        print(str(i) +  ",esp"+str(epsilon))
+    for epsilon in epsilons:
+        if(epsilon>1):
+            epsilon=np.round(epsilon)
+        else:
+            epsilon=np.round(epsilon,decimals=4)
+        print("esp"+str(epsilon))
 
         with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
-            tmp_out.write("id"+"score\n")
+            tmp_out.write("id,score\n")
             tmp_out.close()
 
         ###initialize pool
@@ -281,11 +289,9 @@ if __name__ == '__main__' :
                     out, err = process.communicate()
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
         logging.info('ABC done for epsilon='+str(epsilon))
-        epsilon=epsilon - 0.25
         pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
         oldpool=rawMatricesFromPool(newpool)
         tmp_pdict=renewPool(numParticule,pref,oldpool)
-        print(tmp_pdict)
         pdict={}     #list of score for each exp
         newpool={}     #list of score for each exp
         tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
