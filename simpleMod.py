@@ -1,5 +1,12 @@
 import os,time,sys,logging
-import random
+import numpy as np
+
+sep=","
+
+order = 'mu'+sep+'sd'+sep+'n'
+
+def genData():
+    return np.random.normal(10,2,60)
 
 ##Check consistency of paramter
 ##generate the folders and files for the xp
@@ -12,15 +19,18 @@ class Experiment:
     :param outpath: path where will be stored expe config and outputfiles
     """
     
-    def __init__(self, params,prefId=""):
-        binpath=""
-
+    def __init__(self, params,data):
         self.consistence=True
         self.params = params
-        self.expId = "_".join(map(str,param))
+        self.expId = "_".join(map(str,params))
         self.score=-1
-        
+        self.data=data
         self.kind=str("a")
+        self.consistence=False
+        if(params[2] <= 10. or params[1] <= 0.0):
+            self.consistence=False
+        else:
+            self.consistence=True
 
 
     def getKind(self):
@@ -31,7 +41,7 @@ class Experiment:
 
     #check if the score exist and return it, fi not return -1
     def gatherScore(self):
-        return(random.random())
+        return(self.generateTask())
 
     #check if the score exist and return it, fi not return -1
     def getScore(self):
@@ -45,13 +55,19 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
+        print(self.params)
+        return(np.random.normal(self.params[0],self.params[1],int(self.params[2])))
+
         
     #remove the entire folder of the particul
     def remove(self):
+        return()
 
     #clean useless folder 
     def clean(self):
+        return()
 
     #move the particule forlder
     def softRemove(self):
+        return()
 
