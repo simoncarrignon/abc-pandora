@@ -6,6 +6,7 @@ import numpy as np
 import logging
 import time
 import subprocess
+from scipy import stats
 from sampler import TophatPrior
 from sampler import weighted_cov
 from simpleMod  import Experiment
@@ -14,8 +15,7 @@ from simpleMod  import order
 
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
-def genTestPool(N,pref):
-    priors = TophatPrior([1,1,0],[30,5,.2])
+def genTestPool(prior,N,pref):
     pool_exp={}
     for p in range(N):
         params=priors()
@@ -29,7 +29,6 @@ def genTestPool(N,pref):
 def rawMatricesFromPool(pool):
     rawmat={}
     rawmat["scores"]=[]
-    rawmat["sigma"]=1
     rawmat["thetas"]=[]
     for exp in pool.values():
         rawmat["scores"].append(1.0/numParticule)
@@ -37,7 +36,6 @@ def rawMatricesFromPool(pool):
 
     rawmat["scores"]=np.asarray(rawmat["scores"])
     rawmat["thetas"]=np.asarray(rawmat["thetas"])
-    rawmat["sigma"]=2 * weighted_cov(rawmat["thetas"],rawmat["scores"])
     return(rawmat)
 
 #recreate a subset of N experiments with paramters drawn from distribution of poldpool
@@ -45,16 +43,22 @@ def rawMatricesFromPool(pool):
 def renewPool(N,pref,oldpool):
     pool_exp={}
     for p in range(N):
-        idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
+        idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
         theta = oldpool["thetas"][idx]
         sigma = oldpool["sigma"]
         params = np.random.multivariate_normal(theta, sigma)
+
+        while (params<0).any():
+            params = np.random.multivariate_normal(theta, sigma)
+
         one=Experiment(params,pref)
         while(not one.consistence):
-            idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
+            idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
             theta = oldpool["thetas"][idx]
             sigma = oldpool["sigma"]
             params = np.random.multivariate_normal(theta, sigma)
+            while (params<0).any():
+                params = np.random.multivariate_normal(theta, sigma)
             one=Experiment(params,pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
@@ -169,8 +173,8 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
-    numeps=4
-    maxeps=20
+    numeps=10
+    maxeps=5
     mineps=0.2
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
@@ -180,8 +184,13 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
 
-    tmp_pdict=genTestPool(numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
+    priors = TophatPrior([1,1,0],[80,15,1])
+    tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
+    firstWeight = np.ones(numParticule) / numParticule
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
+    oldpool["ws"]=firstWeight
+    oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
+
     isNeedLauncher=False
     
 
@@ -224,8 +233,8 @@ if __name__ == '__main__' :
                         try:
                             remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
                             tasks[tid]['status'] = 'running'
-                            tasks[tid]['remote_id'] = remote_id
                         except:
+                            iasks[tid]['remote_id'] = remote_id
                             logging.warning("Task ID not found")
                             tasks[tid]['status'] = ''
                             logging.warning('probleme while launching the job')
@@ -259,15 +268,16 @@ if __name__ == '__main__' :
                 #print(str(Y))
                 tmp_exp.score=np.mean(np.abs(Y-s))
                 if(tmp_exp.score>0):
-                    if(tmp_exp.score > epsilon):
+                    if(tmp_exp.score >= epsilon):
                         tmp_exp.remove()
                         tmp_pdict.pop(t,None)
                     else:
-                        with open("tmp_res"+str(epsilon)+".csv",'a') as tmp_out:
-                            tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
-                            tmp_out.close()
-                        pdict[tmp_exp.getId()]=tmp_exp.score
-                        newpool[tmp_exp.getId()]=tmp_exp
+                        if(len(pdict)<numParticule):
+                            with open("tmp_res"+str(epsilon)+".csv",'a') as tmp_out:
+                                tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
+                                tmp_out.close()
+                            pdict[tmp_exp.getId()]=tmp_exp.score
+                            newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
             #(the pool is empty ) all simulation finished and we have not yet enough particle
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
@@ -290,8 +300,26 @@ if __name__ == '__main__' :
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
         logging.info('ABC done for epsilon='+str(epsilon))
         pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
-        oldpool=rawMatricesFromPool(newpool)
+
+
+        new_raw=rawMatricesFromPool(newpool)
+
+
+
+        sigma=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
+        new_raw["sigma"]=sigma
+        new_raw["ws"]=[]
+        for exp in newpool.values():
+            theta=exp.params
+            kernel = stats.multivariate_normal(theta, sigma, allow_singular=True).pdf
+            new_raw["ws"].append(priors(theta) / np.sum(oldpool["ws"] * kernel(oldpool["thetas"])) )
+        new_raw["ws"]=np.asarray(new_raw["ws"])
+        #new_raw["ws"]=np.ones(len(oldpool["thetas"])) / len(oldpool["thetas"])
+        
+        oldpool=new_raw
+
         tmp_pdict=renewPool(numParticule,pref,oldpool)
+
         pdict={}     #list of score for each exp
         newpool={}     #list of score for each exp
         tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
