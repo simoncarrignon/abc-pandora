@@ -54,9 +54,8 @@ class Experiment:
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
            #(self.params[indices['market_size']] <= 0 ) #agent has to visit the market to exchange stuff
           ):
-            #print("baddd",params)
             self.consistence=False
-
+            logging.warning( "unconsistent particle")  
         else:
             soup = bs(open(self.binpath+"/config.xml"),'xml') #read a generic config file ##need lxml installed
             
