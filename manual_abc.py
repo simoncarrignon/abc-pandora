@@ -9,9 +9,8 @@ import subprocess
 from scipy import stats
 from sampler import TophatPrior
 from sampler import weighted_cov
-from simpleMod  import Experiment
-from simpleMod  import genData
-from simpleMod  import order
+from ceecexp import Experiment
+from ceecexp import order
 
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
@@ -153,7 +152,6 @@ def writeParticules(particules,epsi,outfilename):
 
 
 if __name__ == '__main__' :
-    Y=genData()
     print(Y)
     pdict={}     #list of score for each exp
     newpool={}     #list of score for each exp
@@ -180,18 +178,19 @@ if __name__ == '__main__' :
 
     pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
 
+    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
 
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
 
-    priors = TophatPrior([1,1,0],[80,15,1])
+    priors = TophatPrior([0,0.5,0,150,2],[1,15,10,160,8])
     tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
     firstWeight = np.ones(numParticule) / numParticule
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
     oldpool["ws"]=firstWeight
     oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
 
-    isNeedLauncher=False
+    isNeedLauncher=True
     
 
     for epsilon in epsilons:
@@ -233,8 +232,8 @@ if __name__ == '__main__' :
                         try:
                             remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
                             tasks[tid]['status'] = 'running'
+                            tasks[tid]['remote_id'] = remote_id
                         except:
-                            iasks[tid]['remote_id'] = remote_id
                             logging.warning("Task ID not found")
                             tasks[tid]['status'] = ''
                             logging.warning('probleme while launching the job')
@@ -257,16 +256,12 @@ if __name__ == '__main__' :
                     ##in every other case it means that the task ended so we should move on and start a new one
                     if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
                             dead+=1
-            ##################################################
 
             ##update the pool of particule given their score if the experiment has finished
             tmp_keys=list(tmp_pdict.keys())
             for t in tmp_keys:
                 tmp_exp=tmp_pdict[t]
-                s=tmp_exp.gatherScore()
-                #print(str(s))
-                #print(str(Y))
-                tmp_exp.score=np.mean(np.abs(Y-s))
+                tmp_exp.gatherScore()
                 if(tmp_exp.score>0):
                     if(tmp_exp.score >= epsilon):
                         tmp_exp.remove()
@@ -279,8 +274,11 @@ if __name__ == '__main__' :
                             pdict[tmp_exp.getId()]=tmp_exp.score
                             newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
+
             #(the pool is empty ) all simulation finished and we have not yet enough particle
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
+            #this may be source of pb to check
+            #if(len(pdict) < numParticule and dead == len(tasks)): 
             if(len(pdict) < numParticule and (dead == len(tasks) and len(tmp_pdict) <= 0)): 
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
