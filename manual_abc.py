@@ -6,39 +6,56 @@ import numpy as np
 import logging
 import time
 import subprocess
+from sampler import TophatPrior
+from sampler import weighted_cov
 from simpleMod  import Experiment
 
-class TophatPrior(object):
-    """
-    Tophat prior
-    :param min: scalar or array of min values
-    :param max: scalar or array of max values
-    """
-    def __init__(self, min, max):
-        self.min = np.atleast_1d(min)
-        self.max = np.atleast_1d(max)
-        self._random = np.random.mtrand.RandomState()
-        assert self.min.shape == self.max.shape
-        assert np.all(self.min < self.max)
-    def __call__(self, theta=None):
-        if theta is None:
-            return np.array([self._random.uniform(mi, ma) for (mi, ma) in zip(self.min, self.max)])
-        else:
-            return 1 if np.all(theta < self.max) and np.all(theta >= self.min) else 0
 
-
-
-
-#generate a pool of experiment of size `size` that will be stored in the folder `pref`
-def genTestPool(size,pref):
+#generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
+def genTestPool(N,pref):
+    priors = TophatPrior([0,0.5,0,150,2],[1,15,10,160,8])
     pool_exp={}
-    for p in range(size):
-        priors = TophatPrior([0,0.5,0,250,2],[1,15,10,500,30])
+    for p in range(N):
         params=priors()
         one=Experiment(params,pref)
         while(not one.consistence):
             params=priors()
-	    one=Experiment(params,pref)
+            one=Experiment(params,pref)
+        pool_exp[one.getId()]=one
+    return(pool_exp)
+
+def rawMatricesFromPool(pool):
+    rawmat={}
+    rawmat["scores"]=[]
+    rawmat["sigma"]=1
+    rawmat["thetas"]=[]
+    for exp in pool.values():
+        rawmat["scores"].append(1.0/numParticule)
+        rawmat["thetas"].append(np.array(exp.params))
+
+    rawmat["scores"]=np.asarray(rawmat["scores"])
+    rawmat["thetas"]=np.asarray(rawmat["thetas"])
+    rawmat["sigma"]=2 * weighted_cov(rawmat["thetas"],rawmat["scores"])
+    return(rawmat)
+
+#recreate a subset of N experiments with paramters drawn from distribution of poldpool
+#as genTestPool return a dictionnary id=>exp
+def renewPool(N,pref,oldpool):
+    pool_exp={}
+    for p in range(N):
+        idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
+        theta = oldpool["thetas"][idx]
+        sigma = oldpool["sigma"]
+        params = np.random.multivariate_normal(theta, sigma)
+        print("lafuente:"+str(params))
+        one=Experiment(params,pref)
+        while(not one.consistence):
+            idx = np.random.choice(range(len(oldpool["scores"])), 1, p=oldpool["scores"]/np.sum(oldpool["scores"]))[0]
+            theta = oldpool["thetas"][idx]
+            sigma = oldpool["sigma"]
+            params = np.random.multivariate_normal(theta, sigma)
+            print("lafuente:"+str(params))
+            one=Experiment(params,pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
 
@@ -48,13 +65,14 @@ def genTestPool(size,pref):
 def writeNupdate(tmp_pdict):
 
     ###ALL that would  be  really  nicer if ABC was an object 
+    ###and wrapper to
     global countExpKind
     global countFileKind
     global tasks
     global numproc_node #defined given MN configuration
     global jobid
 
-    
+
     for pone in tmp_pdict.keys() :
         one=tmp_pdict[pone]
         kind=one.getKind()
@@ -75,29 +93,31 @@ def writeNupdate(tmp_pdict):
         if (not os.path.isdir("taskfiles")):
             os.makedirs("taskfiles") #create folder for the taskfiles
 
-	taskid=kind+"_"+str(countFileKind[kind])
+        taskid=kind+"_"+str(countFileKind[kind])
         taskfilename=taskid+"-"+jobid+".task"
         taskfilename=os.path.join("taskfiles",taskfilename)
 
         with open(taskfilename,'a') as tskf:
             tskf.write(task)
 
-	#TODO task should be handled as object
+    #TODO task should be handled as object
         tasks[taskid]={}
         tasks[taskid]['filename']=taskfilename
         tasks[taskid]['status']='hold'
         tasks[taskid]['kind']=kind
-	logging.debug(tasks)
+    logging.debug(tasks)
 
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that for the ABC
 def launchExpe(taskfile):
-    time="00:15:00"
+    time="00:05:00"
     if(os.getenv('BSC_MACHINE') == 'mn4'):
         command = "bash 2mn4.sh"
-    if(os.getenv('BSC_MACHINE') == 'nord3'):
+    elif(os.getenv('BSC_MACHINE') == 'nord3'):
         command = "bash 2nord3.sh"
-	
+    else:
+        command = "echo"
+
     command = " ".join([command,taskfile,time,str(numproc_node)])
     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
     return(process)
@@ -106,14 +126,14 @@ def launchExpe(taskfile):
 ## Write  a dictionnary of particules `particules` for the epsilon `epsi` in the file `outfilename`
 #TODO set a better handling of the header
 def writeParticules(particules,epsi,outfilename):
-        sep=","
-	with open(outfilename, 'wb') as outpart:
-            header=order+sep+"score"+sep+'epsilon'+"\n"
-       	    outpart.write(header)
-    	    for eid, score in particules.items():
-                thetas=eid.replace("_",",")
-                row=thetas+ sep+ str(score) + sep + str(epsilon)+ "\n"
-       	    	outpart.write(row)
+    sep=","
+    with open(outfilename, 'wb') as outpart:
+        header=order+sep+"score"+sep+'epsilon'+"\n"
+        outpart.write(header)
+        for eid, score in particules.items():
+            thetas=eid.replace("_",",")
+            row=thetas+ sep+ str(score) + sep + str(epsi)+ "\n"
+            outpart.write(row)
 
 ########################################
 #MAIN PROGRAM
@@ -130,111 +150,131 @@ def writeParticules(particules,epsi,outfilename):
 
 if __name__ == '__main__' :
     pdict={}     #list of score for each exp
+    newpool={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
     countFileKind={} #number of tasksfile for each different "kind" 
     tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
-
-    tmp_pdict={} #pool of particules
+    tmp_pdict={} #temporary pool of particules
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
     epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
-
-    orign=os.getcwd() #original workind directory
-    
-    pref="eps_"+str(epsilon)
-    jobid="mother_"
+    orign=os.getcwd() #original working directory
+    jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
     try:
         jobid+="_"+os.getenv("SLURM_JOBID")
     except:
-	print('not a slurm job')
+        print('not a slurm job')
+
+    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
 
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
-   
-    tmp_pdict=genTestPool(numproc,pref)
 
-    with open("tmp_res.csv",'w') as tmp_out:
-	tmp_out.write("id"+"score\n")
+    tmp_pdict=genTestPool(numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
+    oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
 
-    ###initialize pool
-    writeNupdate(tmp_pdict)
+    for i in range(3):
+        print(str(i) +  ",esp"+str(epsilon))
 
-    ##findFileneNameAndUpdateCounter
-    #Launch remaining tasks
-       
-    oldlen=0
-    while(len(pdict) < numParticule):
+        with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
+            tmp_out.write("id"+"score\n")
+            tmp_out.close()
 
-	if(len(pdict)>oldlen): ##logging only if new particules found
-	    oldlen=len(pdict)
-	    logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
+        ###initialize pool
+        writeNupdate(tmp_pdict)
 
-        tsks=list(tasks.keys())
+        ##findFileneNameAndUpdateCounter
+        #Launch remaining tasks
 
-	dead=0
-	for tid,tproc in tasks.items():
-		##check status of the task
-		#if on hold it means it has been created during previous loop and has to be launched
-		if(tasks[tid]['status'] == 'hold'):
-                	launcher=launchExpe(tasks[tid]['filename'])
-			out, err = launcher.communicate()
-			logging.info(out)
-	 		try:
-			    remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
-			    tasks[tid]['status'] = 'running'
-			    tasks[tid]['remote_id'] = remote_id
-			except:
-			    logging.warning("Task ID not found")
-			    tasks[tid]['status'] = 'error'
-			    logging.warning('probleme while launching the job')
+        oldlen=0
+        while(len(pdict) < numParticule):
 
-	       	#if the task is running (meaning a greasy job has been launched) we check if the job is still running
-		# by looking at its status in the queue
-	       	if(tasks[tid]['status'] == 'running'):
-			command=""
-			if(os.getenv('BSC_MACHINE') == 'mn4'):
-				    command += "squeue -h -j"+tasks[tid]['remote_id']
-    				    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-				    out, err = process.communicate()
-				    if(out == ''):
-					logging.warning("task "+tasks[tid]['remote_id']+" not running")
-					tasks[tid]['status']="dead"
-		
-		##in every other case it means that the task ended so we should move on and start a new one
-	       	if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
-			dead+=1	
+            if(len(pdict)>oldlen): ##logging only if new particules found
+                oldlen=len(pdict)
+                logging.info(str(len(pdict))+ "/"+str(numParticule)+ " tot")
 
-        ##update the pool of particule given their score if the experiment has finished
-        tmp_keys=list(tmp_pdict.keys())
-        for t in tmp_keys:
-            tmp_exp=tmp_pdict[t]
-            tmp_exp.gatherScore()
-            if(tmp_exp.score>0):
-                if(tmp_exp.score > epsilon):
-                    tmp_exp.remove()
-                    tmp_pdict.pop(t,None)
-                else:
-		    with open("tmp_res.csv",'a') as tmp_out:
-			tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
-                    pdict[tmp_exp.getId()]=tmp_exp.score
-                    tmp_pdict.pop(t,None)
+            tsks=list(tasks.keys())
 
-        #(the pool is empty ) all simulation finished and we have not yet enough particle
-        if(len(pdict) < numParticule and dead == len(tasks)): 
-	    logging.info("regenerate new taskfiles")
-            ###re-initialize pool
-            tmp_pdict=genTestPool(numproc,pref)
-            writeNupdate(tmp_pdict)
-            ##findFileneNameAndUpdateCounter
-            #Launch remaining tasks
-    writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
-    logging.info('send cancel signal to remaining tasks')
-    for tid,tproc in tasks.items():
-	if(tasks[tid]['status'] == 'running'):
-	    command="scancel "+tasks[tid]['remote_id']
-	    process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-	    out, err = process.communicate()
-	    logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
-    logging.info('ABC done for epsilon='+str(epsilon))
+            dead=0
+
+            for tid,tproc in tasks.items():
+                ##check status of the task
+                #if on hold it means it has been created during previous loop and has to be launched
+                if(tasks[tid]['status'] == 'hold'):
+                    launcher=launchExpe(tasks[tid]['filename'])
+                    out, err = launcher.communicate()
+                    logging.info(out)
+                    try:
+                        remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+                        tasks[tid]['status'] = 'running'
+                        tasks[tid]['remote_id'] = remote_id
+                    except:
+                        logging.warning("Task ID not found")
+                        tasks[tid]['status'] = ''
+                        logging.warning('probleme while launching the job')
+                    #if the task is running (meaning a greasy job has been launched) we check if the job is still running
+                    # by looking at its status in the queue
+                if(tasks[tid]['status'] == 'running'):
+                    command=""
+                    if(os.getenv('BSC_MACHINE') == 'mn4'):
+                        command += "squeue -h -j"+tasks[tid]['remote_id']
+                        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+                        out, err = process.communicate()
+                        if(out == ''):
+                            logging.warning("task "+tasks[tid]['remote_id']+" not running")
+                            tasks[tid]['status']="dead"
+                            print("====================")
+                            print(out)
+                    if(os.getenv('BSC_MACHINE') == None):
+                        tasks[tid]['status']="dead"
+                        print(str(dead))
+                ##in every other case it means that the task ended so we should move on and start a new one
+                if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
+                        dead+=1
+
+            ##update the pool of particule given their score if the experiment has finished
+            tmp_keys=list(tmp_pdict.keys())
+            for t in tmp_keys:
+                tmp_exp=tmp_pdict[t]
+                tmp_exp.gatherScore()
+                if(tmp_exp.score>0):
+                    if(tmp_exp.score > epsilon):
+                        tmp_exp.remove()
+                        tmp_pdict.pop(t,None)
+                    else:
+                        with open("tmp_res"+str(epsilon)+".csv",'a') as tmp_out:
+                            tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
+                            tmp_out.close()
+                        pdict[tmp_exp.getId()]=tmp_exp.score
+                        newpool[tmp_exp.getId()]=tmp_exp
+                        tmp_pdict.pop(t,None)
+
+            #(the pool is empty ) all simulation finished and we have not yet enough particle
+            #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
+            if(len(pdict) < numParticule and dead == len(tasks)): 
+                logging.info("regenerate new taskfiles")
+                ###re-initialize pool
+                tmp_pdict=renewPool(numproc,pref,oldpool)
+                writeNupdate(tmp_pdict)
+                ##findFileneNameAndUpdateCounter
+                #Launch remaining tasks
+        writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
+        logging.info('send cancel signal to remaining tasks')
+        for tid,tproc in tasks.items():
+            if(tasks[tid]['status'] == 'running'):
+                command="scancel "+tasks[tid]['remote_id']
+                process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+                out, err = process.communicate()
+                logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
+        logging.info('ABC done for epsilon='+str(epsilon))
+        epsilon=epsilon - 0.02
+    	pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+	oldpool=rawMatricesFromPool(newpool)
+        tmp_pdict=renewPool(numParticule,pref,oldpool)
+        print(tmp_pdict)
+        pdict={}     #list of score for each exp
+        newpool={}     #list of score for each exp
+        tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
+
