@@ -9,11 +9,13 @@ import subprocess
 from sampler import TophatPrior
 from sampler import weighted_cov
 from simpleMod  import Experiment
+from simpleMod  import genData
+from simpleMod  import order
 
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
 def genTestPool(N,pref):
-    priors = TophatPrior([0,0.5,0,150,2],[1,15,10,160,8])
+    priors = TophatPrior([1,1,1],[50,50,50])
     pool_exp={}
     for p in range(N):
         params=priors()
@@ -149,6 +151,8 @@ def writeParticules(particules,epsi,outfilename):
 
 
 if __name__ == '__main__' :
+    Y=genData()
+    print(Y)
     pdict={}     #list of score for each exp
     newpool={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
@@ -175,6 +179,7 @@ if __name__ == '__main__' :
     tmp_pdict=genTestPool(numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
     isNeedLauncher=False
+    
 
     for i in range(3):
         print(str(i) +  ",esp"+str(epsilon))
@@ -241,7 +246,10 @@ if __name__ == '__main__' :
             tmp_keys=list(tmp_pdict.keys())
             for t in tmp_keys:
                 tmp_exp=tmp_pdict[t]
-                tmp_exp.gatherScore()
+                s=tmp_exp.gatherScore()
+                #print(str(s))
+                #print(str(Y))
+                tmp_exp.score=np.abs(np.mean(Y)-np.mean(s))
                 if(tmp_exp.score>0):
                     if(tmp_exp.score > epsilon):
                         tmp_exp.remove()
@@ -253,7 +261,6 @@ if __name__ == '__main__' :
                         pdict[tmp_exp.getId()]=tmp_exp.score
                         newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
-            print(str(len(tasks)))
             #(the pool is empty ) all simulation finished and we have not yet enough particle
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
             if(len(pdict) < numParticule and (dead == len(tasks) and len(tmp_pdict) <= 0)): 
@@ -274,9 +281,9 @@ if __name__ == '__main__' :
                     out, err = process.communicate()
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
         logging.info('ABC done for epsilon='+str(epsilon))
-        epsilon=epsilon - 0.02
-    	pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
-	oldpool=rawMatricesFromPool(newpool)
+        epsilon=epsilon - 0.25
+        pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+        oldpool=rawMatricesFromPool(newpool)
         tmp_pdict=renewPool(numParticule,pref,oldpool)
         print(tmp_pdict)
         pdict={}     #list of score for each exp
