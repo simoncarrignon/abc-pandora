@@ -40,6 +40,7 @@ def rawMatricesFromPool(pool):
     return(rawmat)
 
 #recreate a subset of N experiments with paramters drawn from distribution of poldpool
+#as genTestPool return a dictionnary id=>exp
 def renewPool(N,pref,oldpool):
     pool_exp={}
     for p in range(N):
@@ -173,9 +174,10 @@ if __name__ == '__main__' :
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
 
     tmp_pdict=genTestPool(numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
+    oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
+
     for i in range(3):
         print(str(i) +  ",esp"+str(epsilon))
-        oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
 
         with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
             tmp_out.write("id"+"score\n")
@@ -269,11 +271,11 @@ if __name__ == '__main__' :
                 logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
         logging.info('ABC done for epsilon='+str(epsilon))
         epsilon=epsilon - 0.02
-        tmp_pdict=newpool
+    	pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+	oldpool=rawMatricesFromPool(newpool)
+        tmp_pdict=renewPool(numParticule,pref,oldpool)
         print(tmp_pdict)
         pdict={}     #list of score for each exp
         newpool={}     #list of score for each exp
-        countExpKind={} #number of experiment for each different "kind" 
-        countFileKind={} #number of tasksfile for each different "kind" 
         tasks={} #list of taskfiles that have to be send to mn, it allows to separate the experiments in different sbatch given some conditions
 
