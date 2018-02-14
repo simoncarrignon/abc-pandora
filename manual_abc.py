@@ -114,7 +114,7 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that for the ABC
 def launchExpe(taskfile):
-    t=15 #time in minutes (ie for 1h30: t=150)
+    t=1 #time in minutes (ie for 1h30: t=150)
     h=t/60
     m=t-60*h
     s=0
@@ -130,7 +130,7 @@ def launchExpe(taskfile):
 
     command = " ".join([command,taskfile,subtime,str(numproc_node)])
     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-    time.sleep(2)
+    #time.sleep()
     return(process)
 
 
@@ -180,9 +180,9 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
-    numeps=10
-    maxeps=5
-    mineps=0.2
+    numeps=5
+    maxeps=0.25
+    mineps=0.11
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
@@ -263,8 +263,21 @@ if __name__ == '__main__' :
                         process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
                         out, err = process.communicate()
                         if(out == ''):
-                            logging.warning("task "+tasks[tid]['remote_id']+" not running")
-                            tasks[tid]['status']="dead"
+                            if(os.getenv('BSC_MACHINE') == 'nord3'):
+                                if('timer' in tasks[tid]):
+                                    if(tasks[tid]['timer']> 10):
+                                        tasks[tid]['status']="dead"
+                                        logging.warning("task "+tasks[tid]['remote_id']+" not running")
+                                    else:
+                                        tasks[tid]['timer']=tasks[tid]['timer']+1
+                                        print( tasks[tid]['timer'])
+                                else:
+                                    print("setup timer for job"+tasks[tid]['remote_id'])
+                                    tasks[tid]['timer']=1
+                            else:
+                                tasks[tid]['status']="dead"
+                                logging.warning("task "+tasks[tid]['remote_id']+" not running")
+
                     ##in every other case it means that the task ended so we should move on and start a new one
                     if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
                             dead+=1

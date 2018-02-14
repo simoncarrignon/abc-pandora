@@ -70,7 +70,7 @@ class Experiment:
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
            (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
-           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < 20 ) or #not enough cultural step to extract meaningful information
+           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < 30 ) or #not enough cultural step to extract meaningful information
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
@@ -155,7 +155,7 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-        n_years=50
+        n_years=30
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
         if(os.getenv('BSC_MACHINE') == 'mn4'):
