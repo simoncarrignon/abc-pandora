@@ -113,10 +113,16 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that for the ABC
 def launchExpe(taskfile):
-    time="00:05:00"
+    t=15 #time in minutes (ie for 1h30: t=150)
+    h=t/60
+    m=t-60*h
+    s=0
     if(os.getenv('BSC_MACHINE') == 'mn4'):
+        time=":".join([str(h).zfill(2),str(m).zfill(2),str(s).zfill(2)])
         command = "bash 2mn4.sh"
     elif(os.getenv('BSC_MACHINE') == 'nord3'):
+        time=":".join([str(h).zfill(2),str(m).zfill(2)]) #nord3 there is no seconde
+        print(time)
         command = "bash 2nord3.sh"
     else:
         command = "echo"
