@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup as bs
+import xml.etree.ElementTree as xtree
 import os,time,sys,logging
 from shutil import rmtree
 import subprocess
@@ -12,7 +12,35 @@ indices= {  "mu"            : 0,
 sep=","
 order = 'nstep'+sep+'cstep'+sep+'mu'+sep+'mumax'+sep+'copy'
 
-##Check consistency of paramter
+
+###XL PARSER TOOL##########
+def parseConfig(filename):
+    """
+    parse
+    :param filename: the name of a config file
+    :return a dictionnary where all leaf of the tree are duct["leaf.tag"]=leaf.attribute
+    """
+    tree = xtree.parse(filename)
+    parsedFile={}
+    parse(tree.getroot(),parsedFile)
+    return((parsedFile,tree))
+
+def parse(root,res):
+    """
+    parse
+    :param root: the root of a xml.etree.ElementTree
+    :param res: an empty dictionnary where to store the tree
+    """
+    for child in root:
+        if(len(child) == 0):
+            res[child.tag]=child.attrib
+        if(len(child) > 0):
+            parse(child,res)
+#############################
+
+
+
+##Check consistency of parameter
 ##generate the folders and files for the xp
 class Experiment: 
     """
@@ -57,7 +85,7 @@ class Experiment:
             self.consistence=False
             logging.warning( "unconsistent particle")  
         else:
-            soup = bs(open(self.binpath+"/config.xml"),'xml') #read a generic config file ##need lxml installed
+            soup,tree = parseConfig(self.binpath+"/config.xml") #
             
             self.kind=str(int(round(params[indices['nstep']]/1000)*1000))
 
@@ -65,14 +93,14 @@ class Experiment:
             ##TODO .updateConfig()
             ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
 
-            soup.numAgents['value']=250
-            soup.culture['step']=str(int(self.params[indices['cstep']]))
-            soup.culture['mutation']=str(self.params[indices['mu']])
-            soup.culture['mumax']=str(self.params[indices['mumax']])
-            soup.culture['copy']=str(self.params[indices['copy']])
-            soup.numSteps['value']=int(self.params[indices['nstep']])*3 #
-            soup.numSteps['serializeResolution']=3*int(self.params[indices['cstep']])
-            soup.events['rate']=int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) )
+            soup["numAgents"]['value']=str(250)
+            soup["culture"]['step']=str(int(self.params[indices['cstep']]))
+            soup["culture"]['mutation']=str(self.params[indices['mu']])
+            soup["culture"]['mumax']=str(self.params[indices['mumax']])
+            soup["culture"]['copy']=str(self.params[indices['copy']])
+            soup["numSteps"]['value']=str(int(self.params[indices['nstep']])*3)
+            soup["numSteps"]['serializeResolution']=str(3*int(self.params[indices['cstep']]))
+            soup["events"]['rate']=str(int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) ))
 
 
             #TODO .createFolder()
@@ -92,9 +120,10 @@ class Experiment:
                     os.symlink(self.binpath+"/province",self.particleDirectory+ "/province") 
                     os.symlink(self.binpath+"/AnalyseTools/analysis",self.particleDirectory+ "/analysis") 
 
-                with open(self.particleDirectory+"/config.xml","a") as out:
-                    out.write(soup.prettify())
-                    out.close()
+                tree.write(self.particleDirectory+"/config.xml")
+                #with open(self.particleDirectory+"/config.xml","a") as out:
+                #    out.write(soup.prettify())
+                #    out.close()
             else:
                 if (os.path.isdir(self.particleDirectory)):  
                     logging.warning( "particle already tested")  

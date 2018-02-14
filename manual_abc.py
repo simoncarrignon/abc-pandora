@@ -233,8 +233,8 @@ if __name__ == '__main__' :
                         try:
                             remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
                             tasks[tid]['status'] = 'running'
+                            tasks[tid]['remote_id'] = remote_id
                         except:
-                            iasks[tid]['remote_id'] = remote_id
                             logging.warning("Task ID not found")
                             tasks[tid]['status'] = ''
                             logging.warning('probleme while launching the job')
@@ -257,16 +257,12 @@ if __name__ == '__main__' :
                     ##in every other case it means that the task ended so we should move on and start a new one
                     if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
                             dead+=1
-            ##################################################
 
             ##update the pool of particule given their score if the experiment has finished
             tmp_keys=list(tmp_pdict.keys())
             for t in tmp_keys:
                 tmp_exp=tmp_pdict[t]
-                s=tmp_exp.gatherScore()
-                #print(str(s))
-                #print(str(Y))
-                tmp_exp.score=np.mean(np.abs(Y-s))
+                tmp_exp.gatherScore()
                 if(tmp_exp.score>0):
                     if(tmp_exp.score >= epsilon):
                         tmp_exp.remove()
@@ -279,8 +275,11 @@ if __name__ == '__main__' :
                             pdict[tmp_exp.getId()]=tmp_exp.score
                             newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
+
             #(the pool is empty ) all simulation finished and we have not yet enough particle
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
+            #this may be source of pb to check
+            #if(len(pdict) < numParticule and dead == len(tasks)): 
             if(len(pdict) < numParticule and (dead == len(tasks) and len(tmp_pdict) <= 0)): 
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
@@ -294,7 +293,11 @@ if __name__ == '__main__' :
         if(isNeedLauncher):
             for tid,tproc in tasks.items():
                 if(tasks[tid]['status'] == 'running'):
-                    command="scancel "+tasks[tid]['remote_id']
+                    command=""
+                    if(os.getenv('BSC_MACHINE') == 'mn4'):
+                        command="scancel "+tasks[tid]['remote_id']
+                    if(os.getenv('BSC_MACHINE') == 'nord3'):
+                        command="skill "+tasks[tid]['remote_id']
                     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
                     out, err = process.communicate()
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
