@@ -11,10 +11,10 @@ def genData():
     means=[]
     stds=[]
     pop=20.0
-    sd=2
-    mean=10
-    fact=.1
-    for time in range(10):
+    sd=8
+    mean=40
+    fact=.05
+    for time in range(20):
         dist=np.random.normal(mean,sd,int(pop))
         pop=pop+fact*pop
         print(pop)
@@ -41,7 +41,7 @@ class Experiment:
         self.data=data
         self.kind=str("a")
         self.consistence=False
-        if(params[1] <= 0.0):
+        if(params[1] <= 0.0 or params[0] <= 0.0):
             self.consistence=False
         else:
             self.consistence=True
@@ -75,7 +75,7 @@ class Experiment:
         sd=self.params[1]
         mean=self.params[0]
         fact=self.params[2]
-        for time in range(10):
+        for time in range(20):
             dist=np.random.normal(mean,sd,int(pop))
             means.append(dist.mean())
             stds.append(dist.std())
