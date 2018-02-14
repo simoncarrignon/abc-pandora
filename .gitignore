@@ -1,4 +1,11 @@
 *.pyc
 *.sw?
 *.task
+*.csv
+*.log
+*.err
+*.rst
+*.bin
+*.out
 
+eps_*
