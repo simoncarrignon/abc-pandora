@@ -12,11 +12,11 @@ taskdir=`dirname $taskfile`
 taskid=`basename $taskfile`
 taskid="${taskid%.*}"
 
-sed  -e "s#TASKFILE#$taskfile#" -e "s#TASKDIR#$taskdir#" -e "s/JNAME/$taskid/" -e "s/time=TIME/time=$time/"  -e "s/ntasks=NTASKS/ntasks=$ntask/" proto.job-mn4 >  $taskdir/$taskid.job
+sed  -e "s#TASKFILE#$taskfile#" -e "s#TASKDIR#$taskdir#" -e "s/JNAME/$taskid/" -e "s/-W TIME/-W $time/"  -e "s/-n NTASKS/-n $ntask/" proto.job-nord3 >  $taskdir/$taskid.job
 
 
 
-sbatch < $taskdir/$taskid.job
+bsub < $taskdir/$taskid.job
 
 
 
