@@ -60,16 +60,10 @@ class Experiment:
 
         self.consistence=True
         self.params = params
-        #self.expId = "_".join([str(int(self.params[indices['ngoods']])),str(int(self.params[indices['nag_good']])),str(self.params[indices['market_size']]),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']])])
         self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']]),str(self.params[indices['mumax']]),str(self.params[indices['copy']])])
         self.binpath=binpath #binpath is the path where the executable & generic config ifle are stored 
         self.outpath=outpath
         self.score=-1
-
-        #for key in indices.keys():
-        #    print(key, ": ", self.params[indices[key]])
-        # priors
-        #print("prepare config file folder")
 
         if((int(self.params[indices['cstep']]) < 1 ) or  #No experiments if no cultural step
            #(int(self.params[indices['nag_good']]) < 1) or  #if num <2 
@@ -113,10 +107,10 @@ class Experiment:
                 os.makedirs(self.particleDirectory) #create folder for the exp
                 os.mkdir(os.path.join(self.particleDirectory,"logs"))
                 os.mkdir(os.path.join(self.particleDirectory,"data"))
-    	        if(os.getenv('BSC_MACHINE') == 'mn4'):
+                if(os.getenv('BSC_MACHINE') == 'mn4'):
                     os.symlink(self.binpath+"/build/ceec",self.particleDirectory+ "/province") 
                     os.symlink(self.binpath+"/AnalyseTools/build/analysis",self.particleDirectory+ "/analysis") 
-    	        if(os.getenv('BSC_MACHINE') == 'nord3'):
+                if(os.getenv('BSC_MACHINE') == 'nord3'):
                     os.symlink(self.binpath+"/province",self.particleDirectory+ "/province") 
                     os.symlink(self.binpath+"/AnalyseTools/analysis",self.particleDirectory+ "/analysis") 
 
@@ -142,12 +136,12 @@ class Experiment:
         filename_score=os.path.join(self.particleDirectory,"score.txt")
         try:
             with open(filename_score,"r") as file_score:
-		try:
-                 	self.score=float(file_score.readline().strip())
-		except :
-            		logging.warning("score in a bad format")
-		self.clean()
-	
+                try:
+                        self.score=float(file_score.readline().strip())
+                except :
+                        logging.warning("score in a bad format")
+                self.clean()
+        
         except IOError:
             logging.debug(str(self)+" still loading")
             self.score=-1
@@ -161,7 +155,7 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-	n_years=50
+        n_years=50
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
         if(os.getenv('BSC_MACHINE') == 'mn4'):
