@@ -152,7 +152,6 @@ def writeParticules(particules,epsi,outfilename):
 
 
 if __name__ == '__main__' :
-    print(Y)
     pdict={}     #list of score for each exp
     newpool={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
@@ -177,8 +176,6 @@ if __name__ == '__main__' :
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
-
-    pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
 
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
@@ -292,7 +289,11 @@ if __name__ == '__main__' :
         if(isNeedLauncher):
             for tid,tproc in tasks.items():
                 if(tasks[tid]['status'] == 'running'):
-                    command="scancel "+tasks[tid]['remote_id']
+                    command=""
+                    if(os.getenv('BSC_MACHINE') == 'mn4'):
+                        command="scancel "+tasks[tid]['remote_id']
+                    if(os.getenv('BSC_MACHINE') == 'nord3'):
+                        command="skill "+tasks[tid]['remote_id']
                     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
                     out, err = process.communicate()
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
