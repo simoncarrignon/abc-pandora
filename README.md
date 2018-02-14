@@ -20,10 +20,10 @@ ln -s ~/mn_tools/mn4_manual_scheduling.sh .
 ```
 
 ### Python
-First fthing is to install the python dependencies which should be only:  beautiful soup, a conveniant way to read the config.xml files (though obviouslty I should be using a python xml reader but ...
 
 
-#### install beautifulsoup 
+#### install manually python libs:
+I will leave this here just in case, with the original exemple of beautifulsoup __but__ this package is not used anymore.
 
 
 From source [here](http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/changes)
@@ -43,26 +43,8 @@ tar xzvf  tarbal.tgz
 cd bs4
 python setup.py install --home ${HOME}/python_libs
 ```
-
-YOur not done yet as bs4 need lxml to read the config file
-	
-#### instal LXML  from source
-if you did good previously, no need for much, you will find source of lxml on github here:
-git clone https://github.com/lxml/lxml.git
-
-then copy them on MN4 and:
-
-```bash
-cd lxml
-python setup.py install --home ${HOME}/python_libs
-```
 ### on nord 3
-
-#### Scipy - not usefull if using module load python 2.7.13
-
-Now I am using scipy to compute the kernel and other "complex" stuff for the ABC, and luckily, scipy is not on nord3 (i realize writting that that it maybe not on mn4 neither). Source for scipy:
-https://github.com/scipy/scipy/archive/v1.0.0.tar.gz
-
+If some python packages are missing install them same way as before
 
 ## usage exemple
 
