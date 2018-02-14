@@ -114,16 +114,23 @@ def writeNupdate(tmp_pdict):
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that for the ABC
 def launchExpe(taskfile):
-    time="00:05:00"
+    t=15 #time in minutes (ie for 1h30: t=150)
+    h=t/60
+    m=t-60*h
+    s=0
+    subtime=""
     if(os.getenv('BSC_MACHINE') == 'mn4'):
+        subtime=":".join([str(h).zfill(2),str(m).zfill(2),str(s).zfill(2)])
         command = "bash 2mn4.sh"
     elif(os.getenv('BSC_MACHINE') == 'nord3'):
+        subtime=":".join([str(h).zfill(2),str(m).zfill(2)]) #nord3 there is no seconde
         command = "bash 2nord3.sh"
     else:
         command = "echo"
 
-    command = " ".join([command,taskfile,time,str(numproc_node)])
+    command = " ".join([command,taskfile,subtime,str(numproc_node)])
     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+    time.sleep(2)
     return(process)
 
 
@@ -231,7 +238,11 @@ if __name__ == '__main__' :
                         out, err = launcher.communicate()
                         logging.info(out)
                         try:
-                            remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+                            remote_id=""
+                            if(os.getenv('BSC_MACHINE') == 'mn4'):
+                                remote_id=re.search('Submitted batch job ([0-9]+)\n',out).group(1)
+                            if(os.getenv('BSC_MACHINE') == 'nord3'):
+                                remote_id=re.search('Job <([0-9]+)> is submitted',out).group(1)
                             tasks[tid]['status'] = 'running'
                             tasks[tid]['remote_id'] = remote_id
                         except:
@@ -297,7 +308,7 @@ if __name__ == '__main__' :
                     if(os.getenv('BSC_MACHINE') == 'mn4'):
                         command="scancel "+tasks[tid]['remote_id']
                     if(os.getenv('BSC_MACHINE') == 'nord3'):
-                        command="skill "+tasks[tid]['remote_id']
+                        command="bkill "+tasks[tid]['remote_id']
                     process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
                     out, err = process.communicate()
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
