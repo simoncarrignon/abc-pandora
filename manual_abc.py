@@ -242,17 +242,17 @@ if __name__ == '__main__' :
                     if(tasks[tid]['status'] == 'running'):
                         command=""
                         if(os.getenv('BSC_MACHINE') == 'mn4'):
-                            command += "squeue -h -j"+tasks[tid]['remote_id']
-                            process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
-                            out, err = process.communicate()
-                            if(out == ''):
-                                logging.warning("task "+tasks[tid]['remote_id']+" not running")
-                                tasks[tid]['status']="dead"
-                                print("====================")
-                                print(out)
+                            command += "squeue -h -j"
+                        if(os.getenv('BSC_MACHINE') == 'nord3'):
+                            command += 'bjobs -noheader '
                         if(os.getenv('BSC_MACHINE') == None):
+                            command += "error"
+                        command+=tasks[tid]['remote_id']
+                        process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
+                        out, err = process.communicate()
+                        if(out == ''):
+                            logging.warning("task "+tasks[tid]['remote_id']+" not running")
                             tasks[tid]['status']="dead"
-                            print(str(dead))
                     ##in every other case it means that the task ended so we should move on and start a new one
                     if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
                             dead+=1
