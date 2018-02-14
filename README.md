@@ -1,12 +1,13 @@
 # PANDORA ABC
 ## Intro
-Simple readme to do ABC on MN4 with ceeculture module of pandora
+Simple readme to do ABC on various architectures (at least MN4,tentative of Nord3 too) with ceeculture module of pandora. 
+
 
 ## Dependencies
 
 ### Internal Tools
 
-* OBviously you need [pandora]() and [ceeculture]()
+* Obviously you need [pandora]() and [ceeculture]()
 * you will need the script that compute the score of the experience:
 	* for this version of ceeculture we utilise a Rscript include in ceeculture
 	```bash
@@ -15,7 +16,7 @@ Simple readme to do ABC on MN4 with ceeculture module of pandora
 * we dont need nothing else as greasy works also very well with SLURM, so we dont need anymore `mn4_manual_scheduling`
 
 ```bash
-ln -s ~/mn_tools/mn4_manual_scheduling.sh ."
+ln -s ~/mn_tools/mn4_manual_scheduling.sh .
 ```
 
 ### Python
@@ -55,6 +56,13 @@ then copy them on MN4 and:
 cd lxml
 python setup.py install --home ${HOME}/python_libs
 ```
+### on nord 3
+
+#### Scipy - not usefull if using module load python 2.7.13
+
+Now I am using scipy to compute the kernel and other "complex" stuff for the ABC, and luckily, scipy is not on nord3 (i realize writting that that it maybe not on mn4 neither). Source for scipy:
+https://github.com/scipy/scipy/archive/v1.0.0.tar.gz
+
 
 ## usage exemple
 
