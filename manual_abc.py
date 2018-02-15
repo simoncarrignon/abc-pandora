@@ -112,10 +112,10 @@ def writeNupdate(tmp_pdict):
 
 ###launch batch of experiments given the machine used
 #TODO a real class "launcher" that can abstract that for the ABC
-def launchExpe(taskfile):
-    t=1 #time in minutes (ie for 1h30: t=150)
-    h=t/60
-    m=t-60*h
+def launchExpe(taskfile,stime):
+    t=stime #time in minutes (ie for 1h30: t=150)
+    h=int(t/60)
+    m=int(t-60*h)
     s=0
     subtime=""
     if(os.getenv('BSC_MACHINE') == 'mn4'):
@@ -168,7 +168,8 @@ if __name__ == '__main__' :
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
-    #epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)
+    #epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)#changing the last argument for the time asked for subjobs (temporary, shoudl be computed given cstep and nstep)
+    stime=float(sys.argv[4])  #changing the last argument for the time asked for subjobs (temporary, shoudl be computed given cstep and nstep)
     orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
@@ -230,7 +231,7 @@ if __name__ == '__main__' :
                     ##check status of the task
                     #if on hold it means it has been created during previous loop and has to be launched
                     if(tasks[tid]['status'] == 'hold'):
-                        launcher=launchExpe(tasks[tid]['filename'])
+                        launcher=launchExpe(tasks[tid]['filename'],stime)
                         out, err = launcher.communicate()
                         logging.info(out)
                         try:
