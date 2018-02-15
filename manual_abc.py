@@ -183,6 +183,7 @@ if __name__ == '__main__' :
     mineps=0.11
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
+    epsilons=np.append(1000,epsilons) #first round = prior check
     pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
 
     #open a general log file
@@ -262,7 +263,7 @@ if __name__ == '__main__' :
                         if(out == ''):
                             if(os.getenv('BSC_MACHINE') == 'nord3'):
                                 if('timer' in tasks[tid]):
-                                    if(tasks[tid]['timer']> 10):
+                                    if(tasks[tid]['timer']> 50):
                                         tasks[tid]['status']="dead"
                                         logging.warning("task "+tasks[tid]['remote_id']+" not running")
                                     else:
@@ -301,7 +302,7 @@ if __name__ == '__main__' :
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
             #this may be source of pb to check
             #if(len(pdict) < numParticule and dead == len(tasks)): 
-            if(len(pdict) < numParticule and (dead == len(tasks) and len(tmp_pdict) <= 0)): 
+            if(len(pdict) < numParticule and len(tmp_pdict) <= 0): 
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
                 tmp_pdict=renewPool(numproc,pref,oldpool)
