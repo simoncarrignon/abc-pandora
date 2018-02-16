@@ -1,6 +1,53 @@
 #file copied from previous script to draw the results of the ABC runs
 
-plotDensities <- function(path,param,epsilon,from,to,...){
+plotAllDensities <- function(table,...){
+	var=colnames(table[[1]])[!colnames(table[[1]])%in% c("epsilon","score")]
+	par(mfrow=c(2,length(var)-3))
+
+	for(v in var){
+		plotDensities(table,v,names(table))
+	}
+	par(mfrow=c(1,1))
+
+}
+
+plotDensities <- function(table,param,epsilon,...){
+	#we assume table1 is a "priorlike" function
+	epsilon=epsilon[2:length(epsilon)]
+	print(epsilon)
+	print(param)
+	prior=table[[1]][,param]
+	rng=range(prior)
+	print(rng)
+	from=rng[1]
+	to=rng[2]
+	htcol=topo.colors(length(epsilon),alpha=1) 
+	names(htcol)=epsilon
+	htcolF=topo.colors(length(epsilon),alpha=.5)
+	#htcolF=c(rgb(34, 139, 34,127.5,maxColorValue=255),rgb(178, 255, 255,127.5,maxColorValue=255))
+	names(htcolF)=epsilon
+	htcolF=c(htcolF,"red")
+	names(htcolF)[length(htcolF)]="prior"
+	listParticles=table[2:length(table)]
+	names(listParticles)=epsilon
+	densities=lapply(listParticles,function(i){density(i[,param],from=0)})#,from=from,to=to)})
+	densitiesPrio=density(prior,from=from,to=to)
+	names(densities)=epsilon
+	rangex=range(lapply(densities,function(i)range(i$x)),densitiesPrio$x)
+	rangey=range(lapply(densities,function(i)range(i$y)),densitiesPrio$y*1.1)
+	par(mar=c(5,5,1,1))
+	plot(density(listParticles[[1]][,param]),ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
+	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),col=htcolF[length(htcolF)],lwd=2)
+	lapply(seq_along(densities),function(i){
+	       polygon(c(rangex[1],densities[[i]]$x,0),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
+	       #	   abline(v=mean(densities[[i]]$x),col=htcol[names(densities)[i]])
+	       #	   text(mean(densities[[i]]$x),0,names(densities)[i],col=htcol[names(densities)[i]])
+})
+	text(from,max(densitiesPrio$y)+.05*max(densitiesPrio$y),substitute(prior:param %~% italic(u)(from,to),list(param=param,from=round(from),to=round(to))),cex=.8)
+	legend("topright",legend=names(htcolF),fill=htcolF,title=expression(epsilon),inset=.05,title.cex=2)
+}
+
+plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
 
     htcol=topo.colors(length(epsilon),alpha=1) 
     names(htcol)=epsilon
@@ -12,7 +59,7 @@ plotDensities <- function(path,param,epsilon,from,to,...){
     listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
     names(listParticles)=epsilon
     print(listParticles)
-    densities=lapply(listParticles,function(i){density(i[,param])})#,from=from,to=to)})
+    densities=lapply(listParticles,function(i){density(i[,param],from=0)})#,from=from,to=to)})
     rdnm=runif(5000,from,to)
     densitiesPrio=density(rdnm,from=from,to=to)
     names(densities)=epsilon
@@ -28,6 +75,7 @@ plotDensities <- function(path,param,epsilon,from,to,...){
 	})
     text(from,max(densitiesPrio$y)+.05*max(densitiesPrio$y),substitute(prior:param %~% italic(u)(from,to),list(param=param,from=from,to=to)))
     legend("topright",legend=names(htcolF),fill=htcolF)
+    return(listParticles)
 }
 
 
