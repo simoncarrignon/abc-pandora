@@ -246,7 +246,7 @@ if __name__ == '__main__' :
                         except:
                             logging.warning("Task ID not found")
                             tasks[tid]['status'] = ''
-                            logging.warning('probleme while launching the job')
+                            logging.warning('problem while launching the job')
                         #if the task is running (meaning a greasy job has been launched) we check if the job is still running
                         # by looking at its status in the queue
                     if(tasks[tid]['status'] == 'running'):
@@ -262,15 +262,16 @@ if __name__ == '__main__' :
                         out, err = process.communicate()
                         if(out == ''):
                             ##In nord3 there is some lag before that the job appears after bjobs command so we setup a timer
+                            timer=50 
                             if(os.getenv('BSC_MACHINE') == 'nord3'):
                                 if('timer' in tasks[tid]):
-                                    if(tasks[tid]['timer']> 50):
+                                    if(tasks[tid]['timer']> timer):
                                         tasks[tid]['status']="dead"
                                         dead+=1
                                         logging.warning("task "+tasks[tid]['remote_id']+" not running")
                                     else:
                                         tasks[tid]['timer']=tasks[tid]['timer']+1
-                                        logging.warning("increasing "+tasks[tid]['remote_id']+" timer:"+str(tasks[tid]['timer'])+"/50")
+                                        logging.warning("increasing "+tasks[tid]['remote_id']+" timer:"+str(tasks[tid]['timer'])+"/"+str(timer))
                                 else:
                                     logging.warning("setup timer for job "+tasks[tid]['remote_id'])
                                     tasks[tid]['timer']=1
@@ -278,6 +279,10 @@ if __name__ == '__main__' :
                                 tasks[tid]['status']="dead"
                                 dead+=1
                                 logging.warning("task "+tasks[tid]['remote_id']+" not running")
+                        else: #job has been found running on the remote machine so next time if it's not found anymore it means it'sdead:
+                            tasks[tid]['timer']=timer - 1
+
+
 
                     ##in every other case it means that the task ended so we should move on and start a new one
                     if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
