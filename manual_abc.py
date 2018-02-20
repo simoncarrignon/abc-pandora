@@ -270,7 +270,7 @@ if __name__ == '__main__' :
                                         logging.warning("task "+tasks[tid]['remote_id']+" not running")
                                     else:
                                         tasks[tid]['timer']=tasks[tid]['timer']+1
-                                        logging.warning("increasing "+tasks[tid]['remote_id']+" timer:"+str(tasks[tid]['timer']=tasks[tid]['timer']+1))"/50")
+                                        logging.warning("increasing "+tasks[tid]['remote_id']+" timer:"+str(tasks[tid]['timer'])+"/50")
                                 else:
                                     logging.warning("setup timer for job "+tasks[tid]['remote_id'])
                                     tasks[tid]['timer']=1
