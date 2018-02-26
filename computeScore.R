@@ -103,9 +103,12 @@ rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
 #simu=agentWith(rawdatasimu,min=1,breaks=granularity)
 simu=agentWith(rawdatasimu,min=1,numsite = 200 ,breaks=granularity)
 
+#print(paste(" simu: r",nrow(simu)," x c",ncol(simu)))
+#print(paste(" realdata: r",nrow(realdata)," x c",ncol(realdata)))
 #compute the score
 #score=simpscore(simu,realdata)
-score=zscore(simu,realdata)
+score=zscore(t(simu),realdata)
+
 
 print(score)
 write(score,file.path(expDir,"score.txt"))
