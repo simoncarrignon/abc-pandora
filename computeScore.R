@@ -11,18 +11,49 @@ computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(ex
 
 
 ##this function return the number of agent with at least on goods of the goods in the list "goods" and for the timestep in "timestep"
-#joinfucntion is the function used to group years put together
-agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1){
+#joinfucntion is the function used to group years put together, it also allow to takes only a subsample of the agents
+agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1,numsite=NULL,bias=NULL){
+	print(paste(numsite,bias,breaks))
+	
 	if(is.null(goods))
 		goods=levels(expe$p_good)[which(levels(expe$p_good) != "coins")]
 	if(!is.null(breaks))
 		expe$timeStep=cut(expe$timeStep,breaks=breaks,label=F)
 	if(is.null(timestep))
 		timestep=unique(expe$timeStep)
+	if(is.null(numsite))
+		numsite=rep(numsite,length(timestep))
+	if(is.null(numsite))
+		numsite=length(levels(expe$agent))
+	if(length(numsite)==1){
+		numsite=rep(numsite,length(timestep))
+		names(numsite)=timestep
+	}
+	if(length(numsite) != length(timestep) )
+		stop("Lenght of break different than length of time")
+	else
+		names(numsite)=timestep
 	expe[is.na(expe)]=0
-	sapply(goods,function(g){
-	       sapply( timestep, function(tmstp){
-		      cur=expe[expe$timeStep == tmstp & expe$p_good != g,] 
+	cur=expe[expe$p_good == "coins",]
+	sapply( timestep, function(tmstp){
+	       cur=cur[cur$timeStep == tmstp,] 
+	       if(!is.null(bias)){
+		       tenpercent=(bias*numsite[tmstp])
+		       ranks=cur[cur$timeStep == unique(cur$timeStep)[1],c("agent","size")] #the rank change through time because i implemanted it like that thus I have to recompute the ranks each time. That sucks, and maybe I should force the size of the new consumer to always be low, and here don't have to worry anymore
+		       topten=ranks$agent[order(ranks$size,decreasing = T)][1:tenpercent] #when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
+		       rest=cur$agent[!(cur$agent %in% topten )]
+		       random=unique(rest)[round(runif(numsite[tmstp]-tenpercent,1,length(unique(rest))))] 
+		       selectedAG=unlist(list(topten,random))
+
+	       }
+	       else{
+		       ##sampling is random
+		       selectedAG=levels(cur$agent)[round(runif(numsite[as.character(tmstp)],1,length(levels(cur$agent))))] 
+	       }
+	       cur=cur[cur$agent %in% selectedAG,]
+	       cur=droplevels(cur)
+	       sapply(goods,function(g){
+
 		      if(!is.null(breaks)){#if we want to breaks the dataset in period then we need to put join the timestep of a same period using joinfunction (usually 'sum') 
 			      join=tapply(cur[,paste(g,"_q",sep="")],cur$agent,joinfunction)
 			      if(min==0)return(length(join[join>=min]))
@@ -38,6 +69,7 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 
 }
 
+
 #get the arguments
 expDir=commandArgs()[7]
 granularity=as.numeric(commandArgs()[8])
@@ -52,22 +84,29 @@ granularity=as.numeric(commandArgs()[8])
 dataGran=paste0("simpsonData",granularity,".bin")
 if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
 	data=read.csv("~/data_per_year.csv")
-	print(commandArgs())
 	data$goods=data$Fabric
 	data$date=cut(data$date,breaks=granularity) 
-	dataSim=sapply( levels(data$goods) , function(g)sapply(sort(unique(data$date)),function(ts){length(unique(data$Location_ascii[data$date == ts & data$goods == g]))}))
-	save(dataSim,file=dataGran)
+	realdata=sapply( levels(data$goods) , function(g)sapply(sort(unique(data$date)),function(ts){length(unique(data$Location_ascii[data$date == ts & data$goods == g]))}))
+	save(realdata,file=dataGran)
 }else{
 	load(dataGran)
 }
 
+simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simpsonDiv)))
+
+zscore <- function(sim,dat) mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean))
+
+
+
 #load simulation data
-simu=agentWith(read.csv(file.path(expDir,"agents.csv"),sep=";"),min=1,breaks=granularity)
+rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
+#simu=agentWith(rawdatasimu,min=1,breaks=granularity)
+simu=agentWith(rawdatasimu,min=1,numsite = 200 ,breaks=granularity)
 
 #compute the score
-score=mean(abs(apply(simu,1,simpsonDiv)-apply(dataSim,1,simpsonDiv)))
+#score=simpscore(simu,realdata)
+score=zscore(simu,realdata)
 
 print(score)
 write(score,file.path(expDir,"score.txt"))
-
 

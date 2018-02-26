@@ -350,6 +350,32 @@ plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
     return(listParticles)
 }
 
+computeScores  <-  function(fold,sample,...){
+
+	expe=list()
+	expe[["folder"]]=fold
+	expe[["data"]]=read.csv(file.path(fold,"agents.csv"),sep=";")
+	expe[["counted"]]=agentWith(expe[["data"]],breaks=nrow(realdata))
+	expe[["simpscore"]]=simpscore(expe[["counted"]],realdata)
+	expe[["sampled_count"]]=lapply(1:sample,function(i){print(i);t(agentWith(expe[["data"]],breaks=nrow(realdata),...))})
+	expe[["zscores"]]=sapply(expe[["sampled_count"]],zscore,realdata)
+	return(expe)
+
+}
+
+
+plotZscoreAndSimp <- function(dat,ranked=T,...){
+	if(ranked)ranks=order(unlist(lapply(dat["zscores",],mean)))
+	else ranks=1:length(dat)
+	print(ranks)
+	#plot(1:ncol(dat),dat["simpscore",ranks],col="red",pch=20,cex=2,axes=F,xlab="",ylim=c(0.1-0.015,0.155+0.015))
+	plot(1:ncol(dat),dat["simpscore",ranks],col="red",pch=20,cex=2,axes=F,xlab="",ylab="")#,ylim=c(0.1-0.015,0.155+0.015))
+	axis(4,col="red",lwd=2,col.axis="red")
+	par(new=T)
+	plot(c(1,ncol(dat)),range(sapply(dat["zscores",],range)),type="n",ylab="zscores",xlab="rank (given by mean zscore)",...)
+	sapply(1:ncol(dat),function(i)try(vioplot(dat[["zscores",ranks[i]]],col=NA,at=i,add=T)))
+}
+
 
 main <- function(){
 	res=read.csv("result_4.5.csv")
@@ -444,11 +470,118 @@ epsilon=c(5,4.75,4.5)
 }
 
 path="./"
+epsilon=c("1000.0","0.25","0.2036","0.1658","0.1351")
+ll=plotDensitiesFrompath(path,"nstep",epsilon,150,360)
+llbis=lapply(ll,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
+
+pdf("testaccio.pdf")
+plotAllDensities(llbis)
+dev.off()
+
+path="./new_abc/"
 epsilon=c("1000.0","0.25","0.2036","0.1658")
 ll=plotDensitiesFrompath(path,"nstep",epsilon,150,360)
 llbis=lapply(ll,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
 
+pdf("testaccioNew.pdf")
 plotAllDensities(llbis)
+dev.off()
 
 
+scoreWithoutSample=read.csv("scoresTis.csv",header=F)
+allres=sapply(paste0(scoreWithoutSample$V2,"agents.csv"),read.csv,sep=";" )
+small=read.csv(paste0(scoreWithoutSample$V2[scoreWithoutSample$V1 == min(scoreWithoutSample$V1)],"agents.csv"),sep=";" )
+big=read.csv(paste0(scoreWithoutSample$V2[scoreWithoutSample$V1 == max(scoreWithoutSample$V1)],"agents.csv"),sep=";" )
+scoreWoSample=list(max=big,min=small)
 
+scoreWithSample=read.csv("scoresTis.csv",header=F)
+allres=sapply(paste0(scoreWithSample$V2,"agents.csv"),read.csv,sep=";" )
+small=read.csv(paste0(scoreWithSample$V2[scoreWithSample$V1 == min(scoreWithSample$V1)],"agents.csv"),sep=";" )
+big=read.csv(paste0(scoreWithSample$V2[scoreWithSample$V1 == max(scoreWithSample$V1)],"agents.csv"),sep=";" )
+scoreWSample=list(max=big,min=small)
+
+pdf("scoreTakingAllCities.pdf",width=3)
+par(mfrow=c(3,1))
+plotSiteWithGood(agentWith(scoreWoSample[["min"]]))
+plotSiteWithGood(agentWith(scoreWoSample[["max"]]))
+plotSiteWithGood(realdata)
+dev.off()
+
+dev.new()
+pdf("scoreSelectingSubsampleOfCities.pdf",width=3)
+par(mfrow=c(3,1))
+plotSiteWithGood(agentWith(scoreWSample[["min"]]))
+plotSiteWithGood(agentWith(scoreWSample[["max"]]))
+plotSiteWithGood(realdata)
+dev.off()
+
+dev.new()
+pdf("scoreSelectingBiasedSubsampleOfCities.pdf",width=3)
+par(mfrow=c(3,1))
+plotSiteWithGood(agentWith(scoreWSample[["min"]],numsite=150,breaks=nrow(realdata),bias=.1))
+plotSiteWithGood(agentWith(scoreWSample[["max"]],numsite=150,breaks=nrow(realdata),bias=.1))
+plotSiteWithGood(realdata)
+dev.off()
+
+dev.new()
+pdf("scoreSelectingSubsampleOfCitiesMapData.pdf",width=3)
+par(mfrow=c(3,1))
+plotSiteWithGood(agentWith(scoreWSample[["min"]],numsite=nsiteData,breaks=nrow(realdata)))
+plotSiteWithGood(agentWith(scoreWSample[["max"]],numsite=nsiteData,breaks=nrow(realdata)))
+plotSiteWithGood(realdata)
+dev.off()
+
+plotSiteWithGood( agentWithSampled(small,origin=data))
+par(mfrow=c(1,1))
+
+exploreZscore <- function(){
+	allscores=sapply(list.dirs("~/share_res/testScoreSerialx/",recursive=F)[1:20],function(i){print(i);return(computeScores(i,sample=100,numsite=200))})
+	allscoresNB=sapply(list.dirs("~/share_res/testScoreSerialx/",recursive=F)[1:2],function(i){print(i);return(computeScores(i,sample=100,numsite=200,bias=.1))})
+
+	par(mfrow=c(1,2))
+	plotZscoreAndSimp(allscores,xlim=c(0,3),ylim=c(0.2,0.5))
+	plotZscoreAndSimp(allscoresNB,xlim=c(0,3),ylim=c(0.2,0.5))
+
+	biasinogrel46
+	allbias=list()
+	for(fold in list.dirs("~/share_res/testScoreSerialx/",recursive=F)){
+		print(fold)
+		allbias[[fold]]= sapply(seq(0,1,0.02),function(i){print(i);return(computeScores(fold,sample=20,numsite=250,bias=i))})
+	}
+
+	print(computeScores("~/share_res/testScoreSerialx/exp_1/",sample=1,numsite=250,bias=.2)$zscore)
+
+	plotZscoreAndSimp(biasing)
+	plotZscoreAndSimp(allscores)
+
+
+	pdf("ZscoreDistribapdf" )
+	plotZscoreAndSimp(biasing,xlim=c(0,51))
+	dev.off()
+
+	vioplot(allscores["zscores",])
+	( simplify2array(lapply(allscores["simpscore",],rep,length(allscores[["zscores",1]])))~simplify2array(allscores["zscores",]) )
+	plot( simplify2array(lapply(allscores["simpscore",],rep,length(allscores[["zscores",1]])))~simplify2array(allscores["zscores",]) )
+	plot( simplify2array(lapply(allscoresscores["zscores",],sd))~simplify2array(lapply(allscores["zscores",],mean)))
+
+	nsiteData=apply(realdata,1,sum)
+	par(mfrow=c(1,1))
+	test=allscores[["data",1]]
+	plot( test$ESB_q ~ test$timeStep,ylim=c(0,1) )
+	plotSiteWithGood(agentWith(allscores[["data",1]],numsite=250,breaks=length(nsiteData)))
+	t2=agentWith(allscores[["data",1]])
+	plotSiteWithGood(t1)
+	pdf("total_num_site.pdf")
+	plot(apply(realdata,1,sum),type="l",lwd=4,xlab="time",ylab="total number of sites")
+	dev.off()
+	ranks=order(unlist(lapply(backscore["zscores",],mean)))
+	pdf("rank1.pdf")
+	plotSiteWithGood(agentWith(backscore[["data",ranks[1]]]))
+	dev.off()
+	pdf("rank50.pdf")
+	plotSiteWithGood(agentWith(backscore[["data",ranks[50]]]))
+	dev.off()
+	pdf("real.pdf")
+	plotSiteWithGood(realdata)
+	dev.off()
+}
