@@ -94,7 +94,7 @@ if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
 
 simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simpsonDiv)))
 
-zscore <- function(sim,dat) mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean))
+zscore <- function(sim,dat) abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean)))
 
 
 
