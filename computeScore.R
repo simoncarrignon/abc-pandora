@@ -18,8 +18,6 @@ computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(ex
 #numsite = if we are NOT using all the sites, one can: determine a number of site or give vector of number of site that will be used for each timestep
 #bias, if using a number of site < of the total number of agents then this allow to fix a percentage of the bigger sites that will be allways used
 agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1,numsite=NULL,bias=NULL){
-	print(paste(numsite,bias,breaks))
-	
 	if(is.null(goods))
 		goods=levels(expe$p_good)[which(levels(expe$p_good) != "coins")]
 	if(!is.null(breaks))
@@ -41,19 +39,23 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 	expe[is.na(expe)]=0
 	cur=expe[expe$p_good == "coins",] #keep only the consumers (ie people producing "coins")
 	sapply( timestep, function(tmstp){
+	       tmstp=as.character(tmstp)
 	       cur=cur[cur$timeStep == tmstp,] 
+	       origin=unique(cur$agent)
 	       if(!is.null(bias)){
-		       tenpercent=(bias*numsite[tmstp])
+		       tenpercent=(bias*min(numsite[tmstp],length(origin)))
 		       ranks=cur[cur$timeStep == unique(cur$timeStep)[1],c("agent","size")] #the rank change through time because i implemanted it like that thus I have to recompute the ranks each time. That sucks, and maybe I should force the size of the new consumer to always be low, and here don't have to worry anymore
-		       topten=ranks$agent[order(ranks$size,decreasing = T)][1:tenpercent] #when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
-		       rest=cur$agent[!(cur$agent %in% topten )] #the agents from which we will randomly select
-		       random=unique(rest)[sample.int(length(unique(rest)))] 
+		       ranks=ranks[ranks$agent %in% origin,]
+		       topten=droplevels(ranks$agent[order(ranks$size,decreasing = T)][1:tenpercent]) #when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
+		       
+		       rest=origin[!(origin %in% topten )] #the agents from which we will randomly select
+		       random=rest[sample.int(length(rest),min(numsite[tmstp],length(origin))-tenpercent)] 
 		       selectedAG=unlist(list(topten,random))
 
 	       }
 	       else{
 		       ##sampling is random
-			selectedAG=levels(cur$agent)[sample.int(length(levels(cur$agent)))]
+			selectedAG=origin[sample.int(length(origin),min(numsite[tmstp],length(origin)))]
 	       }
 	       cur=cur[cur$agent %in% selectedAG,]
 	       cur=droplevels(cur)
