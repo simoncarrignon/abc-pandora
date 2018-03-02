@@ -35,12 +35,18 @@ getSample  <- function(origin,ranks,bias,subsize){
 
 ##this function return the number of agent with at least on goods of the goods in the list "goods" and for the timestep in "timestep"
 #joinfucntion is the function used to group years put together, it also allow to takes only a subsample of the agents
+<<<<<<< HEAD
 #goods = the goods that will be counted
 #timestep = the timestep used ie the interval between wich the sum (or ainy other `joinfunction`) will be counted
 #breaks = the timestep used 
 #numsite = if we are NOT using all the sites, one can: determine a number of site or give vector of number of site that will be used for each timestep
 #bias, if using a number of site < of the total number of agents then this allow to fix a percentage of the bigger sites that will be allways used
 agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1,numsite=NULL,bias=1,type="count"){
+=======
+agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1,numsite=NULL,bias=NULL){
+	print(paste(numsite,bias,breaks))
+	
+>>>>>>> bc9b7f4deafa0303f1e46cab0bfb5d1dfcb04667
 	if(is.null(goods))
 		goods=levels(expe$p_good)[which(levels(expe$p_good) != "coins")]
 	if(!is.null(breaks))
@@ -60,6 +66,7 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 	else
 		names(numsite)=timestep
 	expe[is.na(expe)]=0
+<<<<<<< HEAD
 	cur=expe[expe$p_good == "coins",] #keep only the consumers (ie people producing "coins")
 
 	sapply( timestep, function(tmstp){
@@ -76,6 +83,37 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 			countype = sapply(selectedAG,function(ag){
 			      if(min==0)sum(apply(cur[cur$agent == ag,paste0(goods,"_q") ] ,2,sum)>0)
 			      if(min==1)sum(apply(cur[cur$agent == ag,paste0(goods,"_q") ] ,2,sum)>=min)
+=======
+	cur=expe[expe$p_good == "coins",]
+	sapply( timestep, function(tmstp){
+	       cur=cur[cur$timeStep == tmstp,] 
+	       if(!is.null(bias)){
+		       tenpercent=(bias*numsite[tmstp])
+		       ranks=cur[cur$timeStep == unique(cur$timeStep)[1],c("agent","size")] #the rank change through time because i implemanted it like that thus I have to recompute the ranks each time. That sucks, and maybe I should force the size of the new consumer to always be low, and here don't have to worry anymore
+		       topten=ranks$agent[order(ranks$size,decreasing = T)][1:tenpercent] #when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
+		       rest=cur$agent[!(cur$agent %in% topten )]
+		       random=unique(rest)[round(runif(numsite[tmstp]-tenpercent,1,length(unique(rest))))] 
+		       selectedAG=unlist(list(topten,random))
+
+	       }
+	       else{
+		       ##sampling is random
+		       selectedAG=levels(cur$agent)[round(runif(numsite[as.character(tmstp)],1,length(levels(cur$agent))))] 
+	       }
+	       cur=cur[cur$agent %in% selectedAG,]
+	       cur=droplevels(cur)
+	       sapply(goods,function(g){
+
+		      if(!is.null(breaks)){#if we want to breaks the dataset in period then we need to put join the timestep of a same period using joinfunction (usually 'sum') 
+			      join=tapply(cur[,paste(g,"_q",sep="")],cur$agent,joinfunction)
+			      if(min==0)return(length(join[join>=min]))
+			      if(min==1)return(length(join[join>min]))
+		      }
+		      else{ #if not we just count the number of agent with a quatnity > the min
+			      if(min==1)return(length(cur[ cur[,paste(g,"_q",sep="")] >= min,"agent"]))
+			      if(min==0)return(length(cur[ cur[,paste(g,"_q",sep="")] > min,"agent"]))
+		      }
+>>>>>>> bc9b7f4deafa0303f1e46cab0bfb5d1dfcb04667
 })
 	       return(table(factor(countype,levels=0:length(goods))))
 
@@ -98,7 +136,6 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 })
 
 }
-
 
 
 #get the arguments
@@ -136,9 +173,12 @@ rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
 #simu=agentWith(rawdatasimu,min=1,breaks=granularity)
 simu=agentWith(rawdatasimu,min=1,numsite = 200 ,breaks=granularity)
 
+#print(paste(" simu: r",nrow(simu)," x c",ncol(simu)))
+#print(paste(" realdata: r",nrow(realdata)," x c",ncol(realdata)))
 #compute the score
 #score=simpscore(simu,realdata)
-score=zscore(simu,realdata)
+score=zscore(t(simu),realdata)
+
 
 print(score)
 write(score,file.path(expDir,"score.txt"))

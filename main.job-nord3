@@ -4,11 +4,11 @@
 #BSUB -eo MOTHER_%J.err 
 #BSUB -n  1
 #BSUB -R"span[ptile=1]"
-#BSUB -W 05:00
+#BSUB -W 48:00
 
 start=`date +%s` #record the time to log the total execution time
 
-python manual_abc.py 100 96 16
+python manual_abc.py 500 96 16 15
 
 end=`date +%s`
 

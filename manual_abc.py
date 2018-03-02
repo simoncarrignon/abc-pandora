@@ -191,7 +191,7 @@ if __name__ == '__main__' :
 
 
     #open a general log file
-    logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.INFO)
+    logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
     priors = TophatPrior([1,1,0],[80,15,1])
     tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
@@ -250,7 +250,7 @@ if __name__ == '__main__' :
                         except:
                             logging.warning("Task ID not found")
                             tasks[tid]['status'] = ''
-                            logging.warning('probleme while launching the job')
+                            logging.warning('problem while launching the job')
                         #if the task is running (meaning a greasy job has been launched) we check if the job is still running
                         # by looking at its status in the queue
                     if(tasks[tid]['status'] == 'running'):
@@ -265,20 +265,28 @@ if __name__ == '__main__' :
                         process = subprocess.Popen(command, stdout=subprocess.PIPE,shell=True)
                         out, err = process.communicate()
                         if(out == ''):
+                            ##In nord3 there is some lag before that the job appears after bjobs command so we setup a timer
+                            timer=50 
                             if(os.getenv('BSC_MACHINE') == 'nord3'):
                                 if('timer' in tasks[tid]):
-                                    if(tasks[tid]['timer']> 50):
+                                    if(tasks[tid]['timer']> timer):
                                         tasks[tid]['status']="dead"
+                                        dead+=1
                                         logging.warning("task "+tasks[tid]['remote_id']+" not running")
                                     else:
                                         tasks[tid]['timer']=tasks[tid]['timer']+1
-                                        print( tasks[tid]['timer'])
+                                        logging.warning("increasing "+tasks[tid]['remote_id']+" timer:"+str(tasks[tid]['timer'])+"/"+str(timer))
                                 else:
-                                    print("setup timer for job"+tasks[tid]['remote_id'])
+                                    logging.warning("setup timer for job "+tasks[tid]['remote_id'])
                                     tasks[tid]['timer']=1
                             else:
                                 tasks[tid]['status']="dead"
+                                dead+=1
                                 logging.warning("task "+tasks[tid]['remote_id']+" not running")
+                        else: #job has been found running on the remote machine so next time if it's not found anymore it means it'sdead:
+                            tasks[tid]['timer']=timer - 1
+
+
 
                     ##in every other case it means that the task ended so we should move on and start a new one
                     if(tasks[tid]['status'] != 'running' and tasks[tid]['status'] != 'hold'):
@@ -306,7 +314,8 @@ if __name__ == '__main__' :
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
             #this may be source of pb to check
             #if(len(pdict) < numParticule and dead == len(tasks)): 
-            if(len(pdict) < numParticule and len(tmp_pdict) <= 0): 
+            logging.debug("lenpdict:"+str(len(pdict))+" len tmp_dict:"+str(len(tmp_pdict))+" len tasks:"+ str(len(tasks))+" dead:"+str(dead))
+            if((len(pdict) < numParticule and len(tmp_pdict) <= 0) or (len(pdict) < numParticule and len(tasks) == dead)): 
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
                 tmp_pdict=renewPool(numproc,pref,oldpool)
@@ -348,6 +357,7 @@ if __name__ == '__main__' :
         oldpool=new_raw
 
         tmp_pdict=renewPool(numParticule,pref,oldpool)
+        print(tmp_pdict)
 
         pdict={}     #list of score for each exp
         newpool={}     #list of score for each exp
