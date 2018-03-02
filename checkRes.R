@@ -505,6 +505,7 @@ epsilon=c(5,4.75,4.5)
      plotDensities(llbis,"frac",epsilon,0,0.04)
 }
 
+exploreDensities <- function(){
 path="./"
 epsilon=c("1000.0","0.25","0.2036","0.1658","0.1351")
 ll=plotDensitiesFrompath(path,"nstep",epsilon,150,360)
@@ -569,6 +570,8 @@ dev.off()
 
 plotSiteWithGood( agentWithSampled(small,origin=data))
 par(mfrow=c(1,1))
+allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],sd))
+}
 
 exploreZscore <- function(){
 	allscores=sapply(list.dirs("~/share_res/testScoreSerialx/",recursive=F)[1:20],function(i){print(i);return(computeScores(i,sample=100,numsite=200))})
@@ -681,10 +684,9 @@ exploreZscore <- function(){
 
 	plot(topten)
 
-	allrealdata=list()
 	realdatadiversities=list()
 	realdatadistributions=list()
-	for(year in seq(10,100,10)){
+	for(year in years){
 		print(year)
 		realdatadiversities[[as.character(year)]]=generateRealCount(year,type="div")
 		realdatadistributions[[as.character(year)]]=generateRealCount(year,type="count")
@@ -698,7 +700,7 @@ exploreZscore <- function(){
 
 	datalist=getDatas(names(aa[sample.int(length(aa),1000)]))
 
-	multiexp[["count"]]=sapply(datalist[1:2],function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
+	multiexp[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
 	print("===")
 	multiexp[["div"]]=	sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
 
@@ -722,7 +724,7 @@ exploreZscore <- function(){
 
 	microbenchmark(sapply(datalist[1],function(eij)sapply(years,function(y){zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]])})),time=1)
 
-	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,12))  
+	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,50))  
 	apply(multiexp$div,2,lines) 
 	plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(0,12))  
 	apply(multiexp$count,2,lines) 
@@ -731,6 +733,7 @@ exploreZscore <- function(){
 	apply(absdif$div,2,lines) 
 	plot(1,1,ylim=range(absdif$count,na.rm=T),xlim=c(0,12))  
 	apply(absdif$count,2,lines) 
+	names(topten)
 
 
 }
@@ -772,14 +775,13 @@ getFoldExpInfos <- function(fold,repeatsampling,numsite,realdata,nbias=2){
 }
 
 
-plotSimpsonVsZscores <- plot(sapply(allbias,function(i)(i[["simpscore"]])),sapply(allbias,function(i)mean(i[["scores"]][["zscores",10]])))
+plotSimpsonVsZscores <- function()plot(sapply(allbias,function(i)(i[["simpscore"]])),sapply(allbias,function(i)mean(i[["scores"]][["zscores",10]])))
 
 plotZscoreAndSimp <- function(dat,ranked=T,...){
 	plot(c(1,ncol(dat)),range(sapply(dat["zscores",],range)),type="n",ylab="zscores",xlab="rank (given by mean zscore)",...)
 	sapply(1:ncol(dat),function(i)try(vioplot(dat[["zscores",i]],col=NA,at=i,add=T)))
 }
 
-allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],sd))
 getZscores <- function(allb,fun=mean){
 	allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],fun))
 	allclean= t(simplify2array(allSd[sapply(allSd,function(i)length(i)>0)]))  
@@ -801,7 +803,6 @@ getListScoreFold <- function(fold){
 	rawScores = getAllScoreFold(list.dirs(fold))
        	return(simplify2array(rawScores[sapply(rawScores,function(u)!is.na(u))]))
 }
-names(topten)
 
 generateRealCount <- function(granularity,type="count"){
 	
