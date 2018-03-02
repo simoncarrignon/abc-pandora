@@ -272,6 +272,23 @@ legend  <- function (x, y = NULL, legend, fill = NULL, col = par("col"),
         text = list(x = xt, y = yt)))
 }
 
+
+
+##from a path with epsilon_*.csv results plot the epsilon for each  \theta
+allFromPath <- function(pathtoepsilon){
+	ll=getlistParticlesFromPath(pathtoepsilon,epsilon)
+	plotAllDensities(llbis)
+}
+
+
+#plot \theta_a wrt to \theta_2 for all epsilon of a particle list
+plotcov <- function(listofpart,a,b){
+	par(mfrow=c(1,length(listofpart)))
+	lapply(listofpart,function(u)plot(u[,a] ~ u[,b],ylab=a,xlab=b))
+	par(mfrow=c(1,1))
+}
+
+#plot thes densites of all epsilon for all thethas of a list of particles
 plotAllDensities <- function(table,...){
 	var=colnames(table[[1]])[!colnames(table[[1]])%in% c("epsilon","score")]
 	par(mfrow=c(2,length(var)-3))
@@ -283,6 +300,7 @@ plotAllDensities <- function(table,...){
 
 }
 
+#plot densities of all thetas for the epsilons in the vector `epsilon`
 plotDensities <- function(table,param,epsilon,...){
 	#we assume table1 is a "priorlike" function
 	epsilon=epsilon[2:length(epsilon)]
@@ -350,6 +368,15 @@ plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
     return(listParticles)
 }
 
+getlistParticlesFromPath <- function(path){
+	lf=list.files(path,pattern="resul_*")
+	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
+	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
+	names(listParticles)=epsilon
+	listParticles=lapply(listParticles,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
+	return(listParticles)
+}
+
 computeScores  <-  function(fold,sample,...){
 
 	expe=list()
@@ -363,10 +390,19 @@ computeScores  <-  function(fold,sample,...){
 
 }
 
+computeScoresDat  <-  function(dat,sample,realdata,...){
+
+	expe=list()
+	expe[["sampled_count"]]=lapply(1:sample,function(i){print(i);t(agentWith(dat,breaks=nrow(realdata),...))})
+	expe[["zscores"]]=sapply(expe[["sampled_count"]],zscore,realdata)
+	return(expe)
+
+}
+
 
 plotZscoreAndSimp <- function(dat,ranked=T,...){
 	if(ranked)ranks=order(unlist(lapply(dat["zscores",],mean)))
-	else ranks=1:length(dat)
+	else ranks=1:length(dat["zscores",])
 	print(ranks)
 	#plot(1:ncol(dat),dat["simpscore",ranks],col="red",pch=20,cex=2,axes=F,xlab="",ylim=c(0.1-0.015,0.155+0.015))
 	plot(1:ncol(dat),dat["simpscore",ranks],col="red",pch=20,cex=2,axes=F,xlab="",ylab="")#,ylim=c(0.1-0.015,0.155+0.015))
@@ -543,17 +579,25 @@ exploreZscore <- function(){
 	plotZscoreAndSimp(allscoresNB,xlim=c(0,3),ylim=c(0.2,0.5))
 
 	biasinogrel46
+	alldirs=c(list.dirs("realIntro/realintrSmallEpsBADPOWERBADSCORE/eps_0.0562",recursive=F),list.dirs("realIntro/realintrSmallEpsBADPOWERBADSCORE/eps_1000.0",recursive=F),list.dirs("realIntro/realintrSmallEpsBADPOWERBADSCORE/eps_0.1",recursive=F))
 	allbias=list()
-	for(fold in list.dirs("~/share_res/testScoreSerialx/",recursive=F)){
-		print(fold)
-		allbias[[fold]]= sapply(seq(0,1,0.02),function(i){print(i);return(computeScores(fold,sample=20,numsite=250,bias=i))})
+	for(fold in alldirs){
+		try({
+			print(fold)
+			allbias[[fold]][["data"]]=read.csv(file.path(fold,"agents.csv"),sep=";")
+			allbias[[fold]][["counted"]]=t(agentWith(allbias[[fold]][["data"]],breaks=nrow(realdata)))
+			allbias[[fold]][["simpscore"]]=simpscore(allbias[[fold]][["counted"]],realdata)
+			allbias[[fold]][["scores"]]= sapply(seq(0,0.95,0.1),function(i){print(i);return(computeScoresDat(allbias[[fold]][["data"]],sample=45,numsite=100,bias=i,realdata=realdata))})
+		})
 	}
 
 	print(computeScores("~/share_res/testScoreSerialx/exp_1/",sample=1,numsite=250,bias=.2)$zscore)
 
+	biasing=allbias[[1]]
 	plotZscoreAndSimp(biasing)
 	plotZscoreAndSimp(allscores)
 
+	allscores=allbias[[1]]
 
 	pdf("ZscoreDistribapdf" )
 	plotZscoreAndSimp(biasing,xlim=c(0,51))
@@ -584,4 +628,191 @@ exploreZscore <- function(){
 	pdf("real.pdf")
 	plotSiteWithGood(realdata)
 	dev.off()
+
+	epsilon=c("1000.0","0.2","0.1414","0.1","0.0707","0.05")
+	ll=plotDensitiesFrompath("./realIntro/","nstep",epsilon,150,360)
+	llbis=lapply(ll,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
+	epsilon=c("1000.0","0.25","0.2036","0.1658","0.1351")
+	ll=plotDensitiesFrompath(path,"nstep",epsilon,150,360)
+	llbis=lapply(ll,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
+	plotAllDensities(llbis)
+
+	mi=read.csv("realIntro/REALINTRO/eps_0.0707/147_8_0.548238607829_5.87507349548_4.04141525762/agents.csv",sep=";")
+	mimi=read.csv("realIntro/REALINTRO/eps_0.0707/141_1_0.100955856174_0.132571105273_4.53634146476/agents.csv",sep=";")
+
+	par(mfrow=c(2,1))
+	plotSiteWithGood(t(agentWith(mimi,,breaks=30)))
+	plotSiteWithGood(realdata)
+
+	plot(1:10,1:10,ylim=c(.0,0.035),xlim=c(0,20),type="n")
+	sapply(allbias,function(i)lines(simplify2array(lapply(i["zscores",1:20],sd))))
+	sapply(allbias,function(i)lines(simplify2array(lapply(i["zscores",],mean))))
+	plot(1:10,1:10,ylim=c(.3,0.9),xlim=c(0,20),type="n")
+	sapply(allbias,function(i)lines(simplify2array(lapply(i["zscores",],mean))))
+
+	text(sapply(allbias,function(i)(i[["simpscore"]])),sapply(allbias,function(i)mean(i[["zscores",20]])),labels=sapply(allbias,function(i)(substr(i[["folder",20]],44,55))))
+	bias=20
+	plot(sapply(allbias,function(i)sd(i[["zscores",bias]])),sapply(allbias,function(i)mean(i[["zscores",bias]])))
+	plotSiteWithGood(t(allbias[["/home/scarrign/share_res/testScoreSerialx//exp_19"]][["counted",20]]))
+
+	ll=getlistParticlesFromPath("realIntro/realintrSmallEpsBADPOWERBADSCORE/")
+	plotAllDensities(ll)
+	plotcov(ll,"cstep","nstep")
+
+	ll=getlistParticlesFromPath("citiespl/")
+	plotAllDensities(ll)
+	sapply(ll,function(i)i[i$score == min(i$score),])
+	plotcov(ll,"mumax","mu")
+
+	par(mfrow=c(1,2))
+	plotScoreWrtBias(allbias,fun=mean)
+	plotScoreWrtBias(allbias,fun=sd)
+
+	latest=list.dirs("realIntro/CITIESPL/eps_0.2675/",recursive=F)
+	alllat=getMaxInfo(latest)
+
+	topteninfos=getMaxInfoSample(names(topten),repeatsampling=2,realdata=allrealdata[["30"]])
+	aa=getListScoreFold("realIntro/CITIESPL/")
+	topteninfos[[1]][["scores"]]["zscores",]
+
+
+	topten=sort(aa)[1:20]
+	worsteten=sort(aa,decreasing=T)[1:20]
+
+	plot(topten)
+
+	allrealdata=list()
+	realdatadiversities=list()
+	realdatadistributions=list()
+	for(year in seq(10,100,10)){
+		print(year)
+		realdatadiversities[[as.character(year)]]=generateRealCount(year,type="div")
+		realdatadistributions[[as.character(year)]]=generateRealCount(year,type="count")
+	}
+
+	absdif=list()
+	multiexp=list()
+
+	years=seq(10,100,5)
+	names(years)=seq(10,100,5)
+
+	datalist=getDatas(names(aa[sample.int(length(aa),1000)]))
+
+	multiexp[["count"]]=sapply(datalist[1:2],function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
+	print("===")
+	multiexp[["div"]]=	sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
+
+
+	absdif[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
+	print("===")
+	absdif[["div"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
+
+
+	colyear=topo.colors(length(years))
+	names(colyear)=years
+	plot(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
+	lines(multiexp$div,multiexp$count )
+	points(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
+
+	plot(absdif$count ~ absdif$div,col=colyear[rownames(absdif$count)],pch=20)
+	lines(absdif$div,absdif$count )
+	points(absdif$count ~ absdif$div,col=colyear[rownames(absdif$count)],pch=20)
+
+	sapply(datalist,function(u)length(unique(u[["data"]]$timeStep)))
+
+	microbenchmark(sapply(datalist[1],function(eij)sapply(years,function(y){zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]])})),time=1)
+
+	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,12))  
+	apply(multiexp$div,2,lines) 
+	plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(0,12))  
+	apply(multiexp$count,2,lines) 
+
+	plot(1,1,ylim=range(absdif$div,na.rm=T),xlim=c(0,12))  
+	apply(absdif$div,2,lines) 
+	plot(1,1,ylim=range(absdif$count,na.rm=T),xlim=c(0,12))  
+	apply(absdif$count,2,lines) 
+
+
 }
+
+##From a list of dir,return stuff
+getMaxInfoSample <- function(listofdir,repeatsampling=100,numsite=200,realdata){
+	result=list()
+	
+	for(fold in listofdir){
+		try({
+			result[[fold]]=getFoldExpInfos(fold,repeatsampling,numsite,realdata,nbias=10)
+		})
+
+	}
+	return(result)
+}
+
+getDatas <- function(listofdir){
+	result=list()
+	
+	for(fold in listofdir){
+		try({
+			result[[fold]][["data"]]=read.csv(file.path(fold,"agents.csv"),sep=";")
+		})
+
+	}
+	return(result)
+}
+
+getFoldExpInfos <- function(fold,repeatsampling,numsite,realdata,nbias=2){
+		expe=list()
+		biases=seq(0,0.9,length.out=nbias)
+		names(biases)=paste0(biases,"bias")
+		expe[["data"]]=read.csv(file.path(fold,"agents.csv"),sep=";")
+		expe[["counted"]]=t(agentWith(expe[["data"]],breaks=nrow(realdata)))
+		expe[["simpscore"]]=simpscore(expe[["counted"]],realdata)
+		expe[["scores"]]= sapply(biases,function(i){print(i);return(computeScoresDat(expe[["data"]],sample=repeatsampling,numsite=numsite,bias=i,realdata=realdata))})
+		return(expe)
+}
+
+
+plotSimpsonVsZscores <- plot(sapply(allbias,function(i)(i[["simpscore"]])),sapply(allbias,function(i)mean(i[["scores"]][["zscores",10]])))
+
+plotZscoreAndSimp <- function(dat,ranked=T,...){
+	plot(c(1,ncol(dat)),range(sapply(dat["zscores",],range)),type="n",ylab="zscores",xlab="rank (given by mean zscore)",...)
+	sapply(1:ncol(dat),function(i)try(vioplot(dat[["zscores",i]],col=NA,at=i,add=T)))
+}
+
+allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],sd))
+getZscores <- function(allb,fun=mean){
+	allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],fun))
+	allclean= t(simplify2array(allSd[sapply(allSd,function(i)length(i)>0)]))  
+	return(allclean)
+}
+
+plotScoreWrtBias <- function(allb,scores="zscores",fun=mean){
+	tableres=getZscores(allb,fun)
+	plot(1:10,1:10,ylim=range(tableres),xlim=c(0,ncol(tableres)),type="n",ylab=deparse(substitute(fun)),xlab="% of non random cities")
+	apply(tableres,1,lines)
+}
+
+#return the score in an experiment folder
+getscoreFold <- function(fold)read.csv(paste0(fold,"/score.txt"),header=F)  
+getAllScoreFolds <- function(listfold)sapply(listfold,function(u)(tryCatch(getscoreFold(u)$V1,error=function(err){NA})))
+
+#given the folder of an ABC experiment it a list with the sore for each experiment
+getListScoreFold <- function(fold){
+	rawScores = getAllScoreFold(list.dirs(fold))
+       	return(simplify2array(rawScores[sapply(rawScores,function(u)!is.na(u))]))
+}
+names(topten)
+
+generateRealCount <- function(granularity,type="count"){
+	
+	data=read.csv("~/data_per_year.csv")
+	data$goods=data$Fabric
+	data$date=cut(data$date,breaks=granularity) 
+	if(type=="count")
+		return(sapply( levels(data$goods) , function(g)sapply(sort(unique(data$date)),function(ts){length(unique(data$Location_ascii[data$date == ts & data$goods == g]))})) )
+	if(type=="div")
+		return(t(sapply( levels(data$date) , function(ts) table(factor(sapply(unique(data$Location_ascii),function(ag)length(unique((data$goods[data$Location_ascii==ag & data$date == ts])))) ,levels=0:length(unique(data$goods)))))))
+
+}
+
+
