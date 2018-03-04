@@ -721,10 +721,31 @@ exploreZscore <- function(){
 	print("===")
 	absdif[["div"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
 
+	absdifPROP=list()
+	zscorePROP=list()
+
+	zscorePROP[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="count"))),getprop(realdatadistributions[[as.character(y)]])),error=function(err){NA})})})
+	print("done count ===")
+	zscorePROP[["div"]]=	sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="div"))),getprop(realdatadiversities[[as.character(y)]])),error=function(err){NA})})})
+	print("done div ===")
+
+
+
+	absdifPROP[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="count"))),getprop(realdatadistributions[[as.character(y)]])),error=function(err){NA})})})
+	
+	print("===")
+	absdifPROP[["div"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="div"))),getprop(realdatadiversities[[as.character(y)]])),error=function(err){NA})})})
+
+	save(zscorePROP,file="zscorePROP" )
+	save(absdifPROP,file="absdifPROP" )
+	save(absdif,file="absdif" )
+	save(multiexp,file="multiexp" )
 
 	colyear=topo.colors(length(years))
 	names(colyear)=years
 	plot(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
+	plot(zscorePROP$count ~ zscorePROP$div,col=colyear[rownames(zscorePROP$count)],pch=20)
+	plot(absdifPROP$count ~ absdifPROP$div,col=colyear[rownames(absdifPROP$count)],pch=20)
 	lines(multiexp$div,multiexp$count,lwd=.1)
 	arrows(multiexp$div[1:(length(multiexp$div)-1)],multiexp$count[1:(length(multiexp$count)-1)],multiexp$div[2:(length(multiexp$div))],multiexp$count[2:(length(multiexp$count))],length=.1,lwd=.8 )
 	points(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
@@ -739,15 +760,21 @@ exploreZscore <- function(){
 
 	microbenchmark(sapply(datalist[1],function(eij)sapply(years,function(y){zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]])})),time=1)
 
-	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,12))  
-	apply(multiexp$div,2,lines) 
-	plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(0,12))  
-	apply(multiexp$count,2,lines) 
+	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,21),ylab="score",xlab="#periods")  
+	apply(multiexp$div,2,lines,lwd=.1) 
+	plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(0,21))  
+	apply(multiexp$count,2,lines,lwd=.1) 
 
 	plot(1,1,ylim=range(absdif$div,na.rm=T),xlim=c(0,12))  
 	apply(absdif$div,2,lines) 
 	plot(1,1,ylim=range(absdif$count,na.rm=T),xlim=c(0,12))  
 	apply(absdif$count,2,lines) 
+	names(topten)
+
+	plot(1,1,ylim=range(absdifPROP$div,na.rm=T),xlim=c(0,12))  
+	apply(absdifPROP$div,2,lines,lwd=.1) 
+	plot(1,1,ylim=range(absdifPROP$count,na.rm=T),xlim=c(0,12))  
+	apply(absdifPROP$count,2,lines,lwd=.1) 
 	names(topten)
 
 
@@ -864,6 +891,7 @@ plotSiteWithGood(realdatadiversities[[gdzs$year]])
 plotSiteWithGood(getFoldExpInfos(bczs$fold,nbias=1,realdata=realdatadistributions[[bczs$year]],numsite=40,repeatsampling=1)$counted)
 }
 
+##given a list of folder with associated scores plot the best or the worst simulation given a score `type`
 plotMinMaxFromList <- function(inlist,numsite=40,type="div",side="bad"){
 	select=NULL
 	if(side=="bad")
@@ -879,3 +907,28 @@ plotMinMaxFromList <- function(inlist,numsite=40,type="div",side="bad"){
 getFolderMinFromList <- function(inlist)list(fold=names(which.min(apply(inlist,2,min,na.rm=T)) ),year=names(which.min(apply(inlist,1,min,na.rm=T)) ))
 getFolderMaxFromList <- function(inlist)list(fold=names(which.max(apply(inlist,2,max,na.rm=T)) ),year=names(which.max(apply(inlist,1,max,na.rm=T)) ))
 
+getUnderValue <- function(inlist,val){
+	years=dimnames(inlist)[[1]]
+	folds=dimnames(inlist)[[2]]
+	rscores=c()
+	ryears=c()
+	rfolds=c()
+
+
+	for(year in years){
+		for(fold in folds){
+			score=inlist[year,fold]
+			if(!is.na(score)){
+			if(score < val){
+				rscores=c(rscores,score)
+				ryears=c(ryears,year)
+				rfolds=c(rfolds,fold)
+			}
+			}
+		}
+	}
+	return(cbind.data.frame(year=ryears,fold=rfolds,score=rscores))
+
+
+
+}
