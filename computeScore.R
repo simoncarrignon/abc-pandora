@@ -4,8 +4,17 @@
 #`steps` represent the total number of year that will be used to compute the simpson diversity
 #score= \frac{\sum_{y}{|simpson(sim_y)-simpson(data_y)|}}{y}
 
-
 simpsonDiv <- function(x)sum((x/sum(x))^2) #Compute the simpson diversity index as 
+
+##return proportions 
+getprop  <- function(x)x/apply(x,1,sum)
+
+simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simpsonDiv)))
+
+zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean)))}
+
+absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
+
 
 computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(expe,breaks=breaks,joinfunction=jf,min=min),1,simpsonDiv) #this compute  the  simson index of the number of settlement with differents good for one experiments
 
@@ -122,11 +131,6 @@ if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
 	load(dataGran)
 }
 
-simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simpsonDiv)))
-
-zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean)))}
-
-absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
 
 
