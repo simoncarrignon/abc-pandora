@@ -22,7 +22,7 @@ computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(ex
 getSample  <- function(origin,ranks,bias,subsize){
 	subsample=c()
 	nfixedsites=round((bias*min(subsize,length(origin)))) #number of site selected for their size
-	nrandomsites=min(subsize,length(origin))-nfixedsites  #number of site randomly selected
+	nrandomsites=round(min(subsize,length(origin))-nfixedsites)  #number of site randomly selected
 
 	fixed=droplevels(ranks$agent[order(ranks$size,decreasing = T)][1:nfixedsites]) #when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
 	if(nrandomsites == 0){
@@ -74,8 +74,9 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 	sapply( timestep, function(tmstp){
 	       tmstp=as.character(tmstp)
 	       cur=cur[cur$timeStep == tmstp,] 
-	       origin=unique(cur$agent)
-	       ranks=cur[cur$timeStep == unique(cur$timeStep)[1],c("agent","size")] #the rank change through time because i implemanted it like that thus I have to recompute the ranks each time. That sucks, and maybe I should force the size of the new consumer to always be low, and here don't have to worry anymore
+
+	       origin=droplevels(unique(cur$agent))
+	       ranks=unique(cur[cur$timeStep == unique(cur$timeStep)[1],c("agent","size")]) #the rank change through time because i implemanted it like that thus I have to recompute the ranks each time. That sucks, and maybe I should force the size of the new consumer to always be low, and here don't have to worry anymore
 	       ranks=ranks[ranks$agent %in% origin,]
 	       selectedAG=getSample(origin,ranks,bias,numsite[tmstp])
 	       cur=cur[cur$agent %in% selectedAG,]
