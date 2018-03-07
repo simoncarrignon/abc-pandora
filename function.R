@@ -120,20 +120,14 @@ getSimuCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 
 
 
-diffDataYear <- function(y,e,d,prop=T,diff=absdiff,numsite=40,type="div"){
+diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div"){
 	tryCatch(
 		 {
-			 print(type)
 
-			 dt=t(agentWith(e$data,numperiods=y,numsite=numsite,type=type))
-			 rdt=d[[as.character(y)]]
-			 print(ncol(dt))
-			 print(ncol(rdt))
-			 if(prop){
-				 dt=getprop(dt)
-				 rdt=getprop(rdt)
-			 }
-			 return(diff(dt,rdt))},error=function(err){NA})
+			 dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
+			 rdt=agentWith(simu$data,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=40)
+			 return(diff(dt,rdt))
+		 },error=function(err){print(err);return(NA)})
 }
 
 
@@ -143,24 +137,19 @@ diffDataYear <- function(y,e,d,prop=T,diff=absdiff,numsite=40,type="div"){
 #pattern realdata to ompare 
 #par=T true if to be parallelized
 #prop=T true if to use proportions
-getAllScores <- function(datalist,years,diff,pattern,par=T,prop=T){
-	res=list()
-	type=""
-	if(length(grep("div",deparse(substitute(pattern))))>0)
-		type="div"
-	else
-		type="dis"
+getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T){
+	print(par)
 
 
 	if(par){
-		cl <- makeCluster(detectCores(),outfile="",type="FORK")
+		cl <- makeCluster(detectCores()-1,outfile="",type="FORK")
 
 
-		res=parSapply(cl,datalist,function(eij,yrs){sapply(yrs, diffDataYear,d=pattern,e=eij,prop=prop,diff=diff,type=type)},yrs=years)
+		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 		stopCluster(cl)
 	}
 	else
-		res=parSapply(datalist,function(eij,yrs){sapply(yrs, diffDataYear,d=pattern,e=eij,prop=prop,diff=diff)},yrs=years)
+		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 	return(res)
 }
 
