@@ -10,15 +10,18 @@ zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,me
 absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
 
-computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(expe,breaks=breaks,joinfunction=jf,min=min),1,simpsonDiv) #this compute  the  simson index of the number of settlement with differents good for one experiments
+computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(expe,numperiods=breaks,joinfunction=jf,min=min),1,simpsonDiv) #this compute  the  simson index of the number of settlement with differents good for one experiments
 
 
+#from a given ector of name of size N, return a vector of size N2 size(N2)<size(N)
 getSample  <- function(origin,ranks,bias,subsize){
+	origin=as.character(origin)
 	subsample=c()
+
 	nfixedsites=round((bias*min(subsize,length(origin)))) #number of site selected for their size
 	nrandomsites=round(min(subsize,length(origin))-nfixedsites)  #number of site randomly selected
 
-	fixed=droplevels(ranks$agent[order(ranks$size,decreasing = T)][1:nfixedsites]) #when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
+	fixed=as.character(ranks$agent[order(ranks$size,decreasing = T)][1:nfixedsites] )#when biased toward the big cities we sample the cite but by take at least the 10% of the biggest cities
 	if(nrandomsites == 0){
 		subsample=fixed
 	}
@@ -39,15 +42,18 @@ getSample  <- function(origin,ranks,bias,subsize){
 ##this function return the number of agent with at least on goods of the goods in the list "goods" and for the timestep in "timestep"
 #joinfucntion is the function used to group years put together, it also allow to takes only a subsample of the agents
 #goods = the goods that will be counted
-#timestep = the timestep used ie the interval between wich the sum (or ainy other `joinfunction`) will be counted
-#breaks = the timestep used 
+#timestep = the timestep used ie the interval between wich the sum (or ainy other `joinfunction`) will be counted 
+#numperiods = the number of periods used 
 #numsite = if we are NOT using all the sites, one can: determine a number of site or give vector of number of site that will be used for each timestep
 #bias, if using a number of site < of the total number of agents then this allow to fix a percentage of the bigger sites that will be allways used
-agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1,numsite=NULL,bias=1,type="div"){
+agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction=sum,min=1,numsite=NULL,bias=1,pattern="div",proportion=T){
 	if(is.null(goods))
 		goods=levels(expe$p_good)[which(levels(expe$p_good) != "coins")]
-	if(!is.null(breaks))
-		expe$timeStep=cut(expe$timeStep,breaks=breaks,label=F)
+	if(!is.null(numperiods))
+		if( numperiods > length(unique(expe$timeStep)))
+			stop(sprintf("length of the simulation doesn't allow to cut in %d periods",numperiods))
+		else
+			expe$timeStep=cut(expe$timeStep,breaks=numperiods,label=F)
 	if(is.null(timestep))
 		timestep=unique(expe$timeStep)
 	if(is.null(numsite))
@@ -65,7 +71,7 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 	expe[is.na(expe)]=0
 	cur=expe[expe$p_good == "coins",] #keep only the consumers (ie people producing "coins")
 
-	sapply( timestep, function(tmstp){
+	finalres=sapply( timestep, function(tmstp){
 	       tmstp=as.character(tmstp)
 	       cur=cur[cur$timeStep == tmstp,] 
 
@@ -76,18 +82,19 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 	       cur=cur[cur$agent %in% selectedAG,]
 	       cur=droplevels(cur)
 
-	       if(type=="div"){
-			countype = sapply(selectedAG,function(ag){
-			      if(min==0)sum(apply(cur[cur$agent == ag,paste0(goods,"_q") ] ,2,sum)>0)
-			      if(min==1)sum(apply(cur[cur$agent == ag,paste0(goods,"_q") ] ,2,sum)>=min)
-})
-	       return(table(factor(countype,levels=0:length(goods))))
+	       if(pattern=="div"){
+		       counpattern = sapply(selectedAG,function(ag){
+					    if(min==0)sum(apply(cur[cur$agent == ag,paste0(goods,"_q") ] ,2,sum)>0)
+					    if(min==1)sum(apply(cur[cur$agent == ag,paste0(goods,"_q") ] ,2,sum)>=min)
+			})
+		       res=table(factor(counpattern,levels=0:length(goods)))
+		       return(res)
 
 	       }
-	       if(type=="dis"){
+	       if(pattern=="dis"){
 		       sapply(goods,function(g){
 
-			      if(!is.null(breaks)){#if we want to breaks the dataset in period then we need to put join the timestep of a same period using joinfunction (usually 'sum') 
+			      if(!is.null(numperiods)){#if we want to numperiods the dataset in period then we need to put join the timestep of a same period using joinfunction (usually 'sum') 
 				      join=tapply(cur[,paste(g,"_q",sep="")],cur$agent,joinfunction)
 				      if(min==0)return(length(join[join>min]))
 				      if(min==1)return(length(join[join>=min]))
@@ -100,14 +107,25 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum
 	       }
 
 })
-
+	finalres = t(finalres)
+	if(proportion)finalres=getprop(finalres)
+	return(finalres)
 }
+
+
+#agentWithwrapper
+getSimuCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
+	return(agentWith(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction=sum,min=1,numsite=NULL,bias=1,pattern="div"))
+}
+
+
+
 diffDataYear <- function(y,e,d,prop=T,diff=absdiff,numsite=40,type="div"){
 	tryCatch(
 		 {
 			 print(type)
 
-			 dt=t(agentWith(e$data,breaks=y,numsite=numsite,type=type))
+			 dt=t(agentWith(e$data,numperiods=y,numsite=numsite,type=type))
 			 rdt=d[[as.character(y)]]
 			 print(ncol(dt))
 			 print(ncol(rdt))
