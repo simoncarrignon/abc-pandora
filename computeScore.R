@@ -1,4 +1,4 @@
-#script usage: Rscrip --vanilla folder steps
+#script usage: Rscrip --vanilla folder steps diff <- function
 #This script compute a simple score between a simulation and real data
 #the result of the simulation have to be in `folder` and the real data in `~/data_per_year.csv`
 #`steps` represent the total number of year that will be used to compute the simpson diversity
@@ -9,6 +9,21 @@ source("function.R")
 #get the arguments
 expDir=commandArgs()[7]
 granularity=as.numeric(commandArgs()[8])
+diffstr=commandArgs()[9]
+pattern=commandArgs()[10]
+numsite=as.numeric(commandArgs()[11])
+
+print(diffstr)
+difffun = absdiff
+
+if(is.na(numsite) || numsite == "" )
+	numsite=NULL
+
+if(!(is.na(diffstr) || diffstr == "" ))
+	difffun = get(diffstr) 
+#get allows to find the function with a name that match the string in `diffstr`
+
+print(difffun)
 
 
 #check if the simpson diversity for thoses steps has been already computed
@@ -34,13 +49,14 @@ if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
 #load simulation data
 rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
 #simu=agentWith(rawdatasimu,min=1,breaks=granularity)
-simu=agentWith(rawdatasimu,min=1,numsite = 200 ,breaks=granularity)
+simu=t(agentWith(rawdatasimu,min=1,numsite = numsite ,breaks=granularity,type=pattern))
 
 #print(paste(" simu: r",nrow(simu)," x c",ncol(simu)))
 #print(paste(" realdata: r",nrow(realdata)," x c",ncol(realdata)))
 #compute the score
 #score=simpscore(simu,realdata)
-score=zscore(t(simu),realdata)
+
+score=difffun(simu,realdata)
 
 
 print(score)
