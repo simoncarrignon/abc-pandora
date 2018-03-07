@@ -164,3 +164,85 @@ getAllScores <- function(datalist,years,diff,pattern,par=T,prop=T){
 	return(res)
 }
 
+
+getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
+
+
+	#check if the simpson diversity for thoses steps has been already computed
+	#this file is stored just one folder before which means that we expect the experiemnt to be stored in one folder under the Folder where they are launched. 
+	#Which is true given the implementation of the classe Experiment in ceec.py (generateState line 103 & initialisation line 54)
+	#This script as no meaning outside the ABC framework
+	#In fact this script SHOULD BE implemented as a method eof Experiments, in order to allow the framework to work with any kind of EXPERIMENTS
+	if(is.null(goods))
+		goods=levels(data$goods)
+	filenameBackup=paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin")
+	if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
+		realdata=generateDataCount(numperiods,pattern,proportion,goods)
+		save(realdata,file=filenameBackup)
+	}else{
+		load(filenameBackup)
+	}
+	return(realdata)
+
+}
+
+
+#generateDataCount <- function(numperiods,pattern="div",proportion=T,goods=NULL){
+#this is the pending version of agentWith but for the realdata. It should have the same argument and return the same thing
+generateDataCount <- function(numperiods,pattern="div",proportion=T,goods=NULL){
+	if(!(pattern %in% c("dis","div"))){
+		print("unrecognized pattern")
+		stop(-1)
+	}
+	data=read.csv("~/data_per_year.csv")
+	data$goods=data$Fabric
+
+	if(is.null(goods))
+		goods=levels(data$goods)
+	names(goods)=goods
+	data$date=cut(data$date,breaks=numperiods) 
+	if(pattern=="dis")
+		realdata=(sapply( goods , function(g)sapply(sort(unique(data$date)),function(ts)length(unique(data$Location_ascii[data$date == ts & data$goods == g])))) )
+	if(pattern=="div")
+		realdata=(t(sapply( levels(data$date) , function(ts) table(factor(sapply(unique(data$Location_ascii),function(ag)length(unique((data$goods[data$Location_ascii==ag & data$date == ts & data$goods %in% goods])))) ,levels=0:length(goods))))))
+	if(proportion)return(getprop(realdata))
+	else return(realdata)
+}
+
+##return a string made of all the las letter of all the strings in strcev
+concatlast <- function(strvec){
+	strvec=sort(as.character(strvec))
+	paste0(substr(strvec,nchar(strvec),nchar(strvec)),collapse="")   
+}
+
+generetclust <- function(data,numperiods=10){
+
+	library(vegan)
+	data$date=cut(data$date,breaks=numperiods) 
+
+	u=tapply(data$X, data[,c("date","Fabric_rough","Location_ascii")],length)
+	u[is.na(u)]=0  
+	lisdist=lapply(rownames(u),function(l)vegdist(t(u[l,,]),method="jaccard",na.rm=T))
+	names(lisdist)=rownames(u)
+	names(lisdist)
+	lisdist=lapply(lisdist,function(i){i[is.na(i)]=0;return(i)})
+
+	sapply(seq(1,500,10),function(r){png(sprintf("Bphyltree%03d.png",r),width=1400,height=1400);plot(root(as.phylo(hclust(lisdist[[names(lisdist)[r]]])),"athens"),main=paste("year",rownames(u)[r]));dev.off()})
+
+	sapply(seq(1,500,10),function(r){png(sprintf("tree%03d.png",r),width=1400);plot(as.dendrogram(hclust(dist(t(u[r,,])))),main=paste("year",rownames(u)[r]));dev.off()})
+	sapply(seq(1,500,10),function(r){png(sprintf("unroottree%03d.png",r),width=1400,height=1400);plot(as.phylo(hclust(dist(t(u[r,,])))),main=paste("year",rownames(u)[r]),type="unrooted");dev.off()})
+	sapply(seq(1,500,10),function(r){png(sprintf("fantree%03d.png",r),width=1400,height=1400);plot(as.phylo(hclust(dist(t(u[r,,])))),main=paste("year",rownames(u)[r]),type="fan");dev.off()})
+	sapply(seq(1,500,10),function(r){png(sprintf("phyltree%03d.png",r),width=1400,height=1400);plot(as.phylo(hclust(dist(t(u[r,,])))),main=paste("year",rownames(u)[r]));dev.off()})
+	sapply(seq(1,500,10),function(r){png(sprintf("phyltree%03d.png",r),width=1400,height=1400);plot(root(as.phylo(hclust(dist(t(u[r,,])))),"athens"),main=paste("year",rownames(u)[r]));dev.off()})
+	sapply(seq(1,500,10),function(r){png(sprintf("jac_phyltree%03d.png",r),width=1400,height=1400);plot(root(as.phylo(hclust(lisdist[[r]])),"athens"),main=paste("year",rownames(u)[r]));dev.off()})
+}
+
+jaccard <- function(a,b){
+	m11=sum( a == 1 & b ==1)
+	m01=sum( a == 0 & b ==1)
+	m10=sum( a == 1 & b ==0)
+	print(m11)
+	print(m01)
+	print(m10)
+	return(m11/(m01+m10+m11))
+}
