@@ -163,7 +163,8 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 	#This script as no meaning outside the ABC framework
 	#In fact this script SHOULD BE implemented as a method eof Experiments, in order to allow the framework to work with any kind of EXPERIMENTS
 	if(is.null(goods))
-		goods=levels(data$goods)
+		goods=c("ESA","ESB","ESC","ESD","ITS")
+
 	filenameBackup=paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin")
 	if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
 		realdata=generateDataCount(numperiods,pattern,proportion,goods)
