@@ -9,6 +9,10 @@ zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,me
 
 absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
+absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
+
+enriscore <- function(sim,dat){sqrt(sum((sim-dat)^2))/length(sim)}
+
 
 computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(expe,numperiods=breaks,joinfunction=jf,min=min),1,simpsonDiv) #this compute  the  simson index of the number of settlement with differents good for one experiments
 
@@ -172,6 +176,39 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 	}else{
 		load(filenameBackup)
 	}
+	return(realdata)
+
+}
+
+####wnated to optimizedbut no significative difference a the simple case est:getRealDataCountBin(40, pattern = "dis")
+getRealDataCountBin <- function(numperiods,pattern="div",goods=NULL,proportion=T){
+
+
+	#check if the simpson diversity for thoses steps has been already computed
+	#this file is stored just one folder before which means that we expect the experiemnt to be stored in one folder under the Folder where they are launched. 
+	#Which is true given the implementation of the classe Experiment in ceec.py (generateState line 103 & initialisation line 54)
+	#This script as no meaning outside the ABC framework
+	#In fact this script SHOULD BE implemented as a method eof Experiments, in order to allow the framework to work with any kind of EXPERIMENTS
+	if(is.null(goods))
+		goods=c("ESA","ESB","ESC","ESD","ITS")
+
+	countid=paste0("realcount.",numperiods,".",pattern,".prop",proportion,".",concatlast(goods))
+	if(!exists(countid)){
+		filenameBackup=paste0(gsub("\\.","-",countid),".bin") #we reaplce "." by "-" just for aestetic valu
+		if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
+			print(paste0("file not exist is here:",exists(countid)))
+			print(countid)
+			count=generateDataCount(numperiods,pattern,proportion,goods)
+			assign(countid,count,envir = .GlobalEnv)
+			print(paste0("is here:",exists(countid)))
+			save(eval(parse(text = countid)),file=filenameBackup)
+		}else{
+			print(paste0("file exist is here:",exists(countid)))
+			load(filenameBackup)
+			print(paste0("is here:",exists(countid)))
+		}
+	}
+	realdata=eval(parse(text = countid))
 	return(realdata)
 
 }
