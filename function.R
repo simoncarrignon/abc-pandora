@@ -156,15 +156,18 @@ diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div")
 #prop=T true if to use proportions
 getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T){
 	print(par)
+	print(length(datalist))
 
 
-	if(par){
+	if(par==T){
 		cl <- makeCluster(detectCores()-1,outfile="",type="FORK")
 
 
 		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 		stopCluster(cl)
 	}
+	if(par=="mpi")
+		res=mpi.parSapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 	else
 		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 	return(res)
@@ -189,39 +192,6 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 	}else{
 		load(filenameBackup)
 	}
-	return(realdata)
-
-}
-
-####wnated to optimizedbut no significative difference a the simple case est:getRealDataCountBin(40, pattern = "dis")
-getRealDataCountBin <- function(numperiods,pattern="div",goods=NULL,proportion=T){
-
-
-	#check if the simpson diversity for thoses steps has been already computed
-	#this file is stored just one folder before which means that we expect the experiemnt to be stored in one folder under the Folder where they are launched. 
-	#Which is true given the implementation of the classe Experiment in ceec.py (generateState line 103 & initialisation line 54)
-	#This script as no meaning outside the ABC framework
-	#In fact this script SHOULD BE implemented as a method eof Experiments, in order to allow the framework to work with any kind of EXPERIMENTS
-	if(is.null(goods))
-		goods=c("ESA","ESB","ESC","ESD","ITS")
-
-	countid=paste0("realcount.",numperiods,".",pattern,".prop",proportion,".",concatlast(goods))
-	if(!exists(countid)){
-		filenameBackup=paste0(gsub("\\.","-",countid),".bin") #we reaplce "." by "-" just for aestetic valu
-		if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
-			print(paste0("file not exist is here:",exists(countid)))
-			print(countid)
-			count=generateDataCount(numperiods,pattern,proportion,goods)
-			assign(countid,count,envir = .GlobalEnv)
-			print(paste0("is here:",exists(countid)))
-			save(eval(parse(text = countid)),file=filenameBackup)
-		}else{
-			print(paste0("file exist is here:",exists(countid)))
-			load(filenameBackup)
-			print(paste0("is here:",exists(countid)))
-		}
-	}
-	realdata=eval(parse(text = countid))
 	return(realdata)
 
 }
