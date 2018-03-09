@@ -9,8 +9,6 @@ zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,me
 
 absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
-absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
-
 enriscore <- function(sim,dat){sqrt(sum((sim-dat)^2))/length(sim)}
 
 
