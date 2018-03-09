@@ -125,13 +125,26 @@ getSimuCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 
 
 diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div"){
-	tryCatch(
-		 {
 
-			 dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
-			 rdt=agentWith(simu$data,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=40)
-			 return(diff(dt,rdt))
-		 },error=function(err){print(err);return(NA)})
+    diffstr=deparse(substitute(diff))
+
+    #TODO : read only if not already in global var and better handle the errors boyyzz
+    countid=paste(gsub("/","",simu))
+    if(!exists(countid)){
+        print(countid)
+        dataexp=read.csv(file.path(simu,"agents.csv"),sep=";")
+        assign(countid,dataexp,envir=.GlobalEnv)
+    }
+    else
+        dataexp=get(countid)
+
+    print(paste("compute:",numperiods,proportion,pattern,simu))
+    dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
+    tryCatch(
+             {
+                 rdt=agentWith(dataexp,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=40)
+                 return(diff(dt,rdt))
+             },error=function(err){return(NA)})
 }
 
 
