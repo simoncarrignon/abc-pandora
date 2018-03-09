@@ -1,0 +1,7 @@
+  R CMD INSTALL Rpackage/Rmpi_0.6-6.tar.gz --configure-args="  
+   --with-Rmpi-include=/apps/INTEL/2017.4/impi/2017.3.196/include64/
+   --with-Rmpi-libpath=/apps/INTEL/2017.4/impi/2017.3.196/lib64/
+   --with-Rmpi-type=OPENMPI"
+
+
+
