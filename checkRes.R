@@ -277,7 +277,7 @@ legend  <- function (x, y = NULL, legend, fill = NULL, col = par("col"),
 ##from a path with epsilon_*.csv results plot the epsilon for each  \theta
 allFromPath <- function(pathtoepsilon){
 	ll=getlistParticlesFromPath(pathtoepsilon,epsilon)
-	plotAllDensities(llbis)
+	plotAllDensities(ll)
 }
 
 
@@ -505,6 +505,7 @@ epsilon=c(5,4.75,4.5)
      plotDensities(llbis,"frac",epsilon,0,0.04)
 }
 
+exploreDensities <- function(){
 path="./"
 epsilon=c("1000.0","0.25","0.2036","0.1658","0.1351")
 ll=plotDensitiesFrompath(path,"nstep",epsilon,150,360)
@@ -569,6 +570,8 @@ dev.off()
 
 plotSiteWithGood( agentWithSampled(small,origin=data))
 par(mfrow=c(1,1))
+allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],sd))
+}
 
 exploreZscore <- function(){
 	allscores=sapply(list.dirs("~/share_res/testScoreSerialx/",recursive=F)[1:20],function(i){print(i);return(computeScores(i,sample=100,numsite=200))})
@@ -672,7 +675,7 @@ exploreZscore <- function(){
 	alllat=getMaxInfo(latest)
 
 	topteninfos=getMaxInfoSample(names(topten),repeatsampling=2,realdata=allrealdata[["30"]])
-	aa=getListScoreFold("realIntro/CITIESPL/")
+	listoffoldsccore=getListScoreFold("realIntro/CITIESPL/")
 	topteninfos[[1]][["scores"]]["zscores",]
 
 
@@ -681,14 +684,22 @@ exploreZscore <- function(){
 
 	plot(topten)
 
-	allrealdata=list()
 	realdatadiversities=list()
 	realdatadistributions=list()
-	for(year in seq(10,100,10)){
+	for(year in years){
 		print(year)
 		realdatadiversities[[as.character(year)]]=generateRealCount(year,type="div")
 		realdatadistributions[[as.character(year)]]=generateRealCount(year,type="count")
 	}
+
+#	save(realdatadistributions,file="realdatadistributions")
+#	save(realdatadiversities,file="realdatadiversities")
+#	save(listoffoldsccore,file="listoffoldsccore")
+#	save(datalist,file="datalist")
+#	load("realdatadistributions")
+#	load("realdatadiversities")
+#	load("listoffoldsccore")
+#	load("datalist")
 
 	absdif=list()
 	multiexp=list()
@@ -696,41 +707,75 @@ exploreZscore <- function(){
 	years=seq(10,100,5)
 	names(years)=seq(10,100,5)
 
-	datalist=getDatas(names(aa[sample.int(length(aa),1000)]))
+	datalist=getDatas(names(listoffoldsccore[sample.int(length(listoffoldsccore),1500)]))
 
-	multiexp[["count"]]=sapply(datalist[1:2],function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
+	print("done datalist===")
+
+	multiexp[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
+	print("done count ===")
+	multiexp[["div"]]=	sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
+	print("done div ===")
+
+
+	absdif[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
 	print("===")
-	multiexp[["div"]]=	sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
+	absdif[["div"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
+
+	absdifPROP=list()
+	zscorePROP=list()
+
+	zscorePROP[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="count"))),getprop(realdatadistributions[[as.character(y)]])),error=function(err){NA})})})
+	print("done count ===")
+	zscorePROP[["div"]]=	sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="div"))),getprop(realdatadiversities[[as.character(y)]])),error=function(err){NA})})})
+	print("done div ===")
 
 
-	absdif[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
+
+	absdifPROP[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="count"))),getprop(realdatadistributions[[as.character(y)]])),error=function(err){NA})})})
+	
 	print("===")
-	absdif[["div"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){print(y);tryCatch(absdiff(t(agentWith(eij$data,breaks=y,numsite=40,type="div")),realdatadiversities[[as.character(y)]]),error=function(err){NA})})})
+	absdifPROP[["div"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(absdiff(getprop(t(agentWith(eij$data,breaks=y,numsite=40,type="div"))),getprop(realdatadiversities[[as.character(y)]])),error=function(err){NA})})})
 
+	save(zscorePROP,file="zscorePROP" )
+	save(absdifPROP,file="absdifPROP" )
+	save(absdif,file="absdif" )
+	save(multiexp,file="multiexp" )
 
 	colyear=topo.colors(length(years))
 	names(colyear)=years
 	plot(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
-	lines(multiexp$div,multiexp$count )
+	plot(zscorePROP$count ~ zscorePROP$div,col=colyear[rownames(zscorePROP$count)],pch=20)
+	plot(absdifPROP$count ~ absdifPROP$div,col=colyear[rownames(absdifPROP$count)],pch=20)
+	lines(multiexp$div,multiexp$count,lwd=.1)
+	arrows(multiexp$div[1:(length(multiexp$div)-1)],multiexp$count[1:(length(multiexp$count)-1)],multiexp$div[2:(length(multiexp$div))],multiexp$count[2:(length(multiexp$count))],length=.1,lwd=.8 )
 	points(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
 
+	legend("topright",legend=years,col=colyear,pch=20,title="#periods")
 	plot(absdif$count ~ absdif$div,col=colyear[rownames(absdif$count)],pch=20)
-	lines(absdif$div,absdif$count )
+	lines(absdif$div,absdif$count,lwd=.1)
 	points(absdif$count ~ absdif$div,col=colyear[rownames(absdif$count)],pch=20)
+	legend("bottomright",legend=years,col=colyear,pch=20,title="#periods")
 
 	sapply(datalist,function(u)length(unique(u[["data"]]$timeStep)))
 
 	microbenchmark(sapply(datalist[1],function(eij)sapply(years,function(y){zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]])})),time=1)
 
-	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,12))  
-	apply(multiexp$div,2,lines) 
-	plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(0,12))  
-	apply(multiexp$count,2,lines) 
+	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,21),ylab="score",xlab="#periods")  
+	apply(multiexp$div,2,lines,lwd=.1) 
+	plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(0,21))  
+	apply(multiexp$count,2,lines,lwd=.1) 
 
 	plot(1,1,ylim=range(absdif$div,na.rm=T),xlim=c(0,12))  
 	apply(absdif$div,2,lines) 
 	plot(1,1,ylim=range(absdif$count,na.rm=T),xlim=c(0,12))  
 	apply(absdif$count,2,lines) 
+	names(topten)
+
+	plot(1,1,ylim=range(absdifPROP$div,na.rm=T),xlim=c(0,12))  
+	apply(absdifPROP$div,2,lines,lwd=.1) 
+	plot(1,1,ylim=range(absdifPROP$count,na.rm=T),xlim=c(0,12))  
+	apply(absdifPROP$count,2,lines,lwd=.1) 
+	names(topten)
 
 
 }
@@ -765,21 +810,21 @@ getFoldExpInfos <- function(fold,repeatsampling,numsite,realdata,nbias=2){
 		biases=seq(0,0.9,length.out=nbias)
 		names(biases)=paste0(biases,"bias")
 		expe[["data"]]=read.csv(file.path(fold,"agents.csv"),sep=";")
-		expe[["counted"]]=t(agentWith(expe[["data"]],breaks=nrow(realdata)))
-		expe[["simpscore"]]=simpscore(expe[["counted"]],realdata)
+		expe[["div"]]=t(agentWith(expe[["data"]],breaks=nrow(realdata),type="div"))
+		expe[["count"]]=t(agentWith(expe[["data"]],breaks=nrow(realdata),type="count"))
+		expe[["simpscore"]]=simpscore(expe[["div"]],realdata)
 		expe[["scores"]]= sapply(biases,function(i){print(i);return(computeScoresDat(expe[["data"]],sample=repeatsampling,numsite=numsite,bias=i,realdata=realdata))})
 		return(expe)
 }
 
 
-plotSimpsonVsZscores <- plot(sapply(allbias,function(i)(i[["simpscore"]])),sapply(allbias,function(i)mean(i[["scores"]][["zscores",10]])))
+plotSimpsonVsZscores <- function()plot(sapply(allbias,function(i)(i[["simpscore"]])),sapply(allbias,function(i)mean(i[["scores"]][["zscores",10]])))
 
 plotZscoreAndSimp <- function(dat,ranked=T,...){
 	plot(c(1,ncol(dat)),range(sapply(dat["zscores",],range)),type="n",ylab="zscores",xlab="rank (given by mean zscore)",...)
 	sapply(1:ncol(dat),function(i)try(vioplot(dat[["zscores",i]],col=NA,at=i,add=T)))
 }
 
-allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],sd))
 getZscores <- function(allb,fun=mean){
 	allSd=sapply(allbias,function(u)sapply(u[["scores"]]["zscores",],fun))
 	allclean= t(simplify2array(allSd[sapply(allSd,function(i)length(i)>0)]))  
@@ -798,10 +843,9 @@ getAllScoreFolds <- function(listfold)sapply(listfold,function(u)(tryCatch(getsc
 
 #given the folder of an ABC experiment it a list with the sore for each experiment
 getListScoreFold <- function(fold){
-	rawScores = getAllScoreFold(list.dirs(fold))
+	rawScores = getAllScoreFolds(list.dirs(fold))
        	return(simplify2array(rawScores[sapply(rawScores,function(u)!is.na(u))]))
 }
-names(topten)
 
 generateRealCount <- function(granularity,type="count"){
 	
@@ -815,4 +859,76 @@ generateRealCount <- function(granularity,type="count"){
 
 }
 
+getMin <- function(){
+row=names(which.min(apply( multiexp$count,1,min,na.rm=T)) )
+best=cbind(multiexp$div[row,col],multiexp$count[row,col])
+plot(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
+plot(multiexp$count ~ absdif$count,col=colyear[rownames(multiexp$count)],pch=20)
+plot(multiexp$div ~ absdif$div,col=colyear[rownames(multiexp$count)],pch=20)
+points(best,col="red",cex=2)
 
+col=names(which.max(apply( multiexp$count,1,max,na.rm=T)) )
+row=names(which.max(apply( multiexp$count,1,max,na.rm=T)) )
+worst=cbind(multiexp$div[row,col],multiexp$count[row,col])
+points(worst,col="red",cex=2)
+
+	
+bdzs=getFolderMaxFromList(multiexp[["di"]])
+gdzs=getFolderMinFromList(multiexp$count)
+bczs=getFolderMaxFromList(multiexp$count)
+gczs=getFolderMinFromList(multiexp$count)
+par(mfrow=c(2,4))
+plotMinMaxFromList(absdif,type="div",side="bad")
+plotMinMaxFromList(absdif,type="div",side="good")
+plotMinMaxFromList(absdif,type="count",side="bad")
+plotMinMaxFromList(absdif,type="count",side="good")
+plotMinMaxFromList(multiexp,type="div",side="bad")
+plotMinMaxFromList(multiexp,type="div",side="good")
+plotMinMaxFromList(multiexp,type="count",side="bad")
+plotMinMaxFromList(multiexp,type="count",side="good")
+
+plotSiteWithGood(realdatadiversities[[gdzs$year]])
+plotSiteWithGood(getFoldExpInfos(bczs$fold,nbias=1,realdata=realdatadistributions[[bczs$year]],numsite=40,repeatsampling=1)$counted)
+}
+
+##given a list of folder with associated scores plot the best or the worst simulation given a score `type`
+plotMinMaxFromList <- function(inlist,numsite=40,type="div",side="bad"){
+	select=NULL
+	if(side=="bad")
+		select = getFolderMaxFromList(inlist[[type]])
+	if(side=="good")
+		select = getFolderMinFromList(inlist[[type]])
+	print(select)
+	dataworst=getDatas(select$fold)[[1]][[1]]
+	getcount=t(agentWith(dataworst,breaks=as.numeric(worst$year),numsite=numsite,type=type,bias=1))
+	plotSiteWithGood(getcount) 
+} 
+
+getFolderMinFromList <- function(inlist)list(fold=names(which.min(apply(inlist,2,min,na.rm=T)) ),year=names(which.min(apply(inlist,1,min,na.rm=T)) ))
+getFolderMaxFromList <- function(inlist)list(fold=names(which.max(apply(inlist,2,max,na.rm=T)) ),year=names(which.max(apply(inlist,1,max,na.rm=T)) ))
+
+getUnderValue <- function(inlist,val){
+	years=dimnames(inlist)[[1]]
+	folds=dimnames(inlist)[[2]]
+	rscores=c()
+	ryears=c()
+	rfolds=c()
+
+
+	for(year in years){
+		for(fold in folds){
+			score=inlist[year,fold]
+			if(!is.na(score)){
+			if(score < val){
+				rscores=c(rscores,score)
+				ryears=c(ryears,year)
+				rfolds=c(rfolds,fold)
+			}
+			}
+		}
+	}
+	return(cbind.data.frame(year=ryears,fold=rfolds,score=rscores))
+
+
+
+}
