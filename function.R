@@ -9,6 +9,8 @@ zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,me
 
 absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
+enriscore <- function(sim,dat){sqrt(sum((sim-dat)^2))/length(sim)}
+
 
 computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(expe,numperiods=breaks,joinfunction=jf,min=min),1,simpsonDiv) #this compute  the  simson index of the number of settlement with differents good for one experiments
 
@@ -121,13 +123,26 @@ getSimuCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 
 
 diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div"){
-	tryCatch(
-		 {
 
-			 dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
-			 rdt=agentWith(simu$data,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=40)
-			 return(diff(dt,rdt))
-		 },error=function(err){print(err);return(NA)})
+    diffstr=deparse(substitute(diff))
+
+    #TODO : read only if not already in global var and better handle the errors boyyzz
+    countid=paste(gsub("/","",simu))
+    if(!exists(countid)){
+        print(countid)
+        dataexp=read.csv(file.path(simu,"agents.csv"),sep=";")
+        assign(countid,dataexp,envir=.GlobalEnv)
+    }
+    else
+        dataexp=get(countid)
+
+    print(paste("compute:",numperiods,proportion,pattern,simu))
+    dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
+    tryCatch(
+             {
+                 rdt=agentWith(dataexp,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=40)
+                 return(diff(dt,rdt))
+             },error=function(err){return(NA)})
 }
 
 
@@ -139,15 +154,18 @@ diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div")
 #prop=T true if to use proportions
 getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T){
 	print(par)
+	print(length(datalist))
 
 
-	if(par){
+	if(par==T){
 		cl <- makeCluster(detectCores()-1,outfile="",type="FORK")
 
 
 		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 		stopCluster(cl)
 	}
+	if(par=="mpi")
+		res=mpi.parSapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 	else
 		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
 	return(res)
@@ -163,7 +181,8 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 	#This script as no meaning outside the ABC framework
 	#In fact this script SHOULD BE implemented as a method eof Experiments, in order to allow the framework to work with any kind of EXPERIMENTS
 	if(is.null(goods))
-		goods=levels(data$goods)
+		goods=c("ESA","ESB","ESC","ESD","ITS")
+
 	filenameBackup=paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin")
 	if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
 		realdata=generateDataCount(numperiods,pattern,proportion,goods)
