@@ -179,8 +179,8 @@ if __name__ == '__main__' :
         print('not a slurm job')
 
     numeps=5
-    maxeps=0.25
-    mineps=0.11
+    maxeps=0.05
+    mineps=0.001
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     epsilons=np.append(1000,epsilons) #first round = prior check
@@ -189,7 +189,7 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
-    priors = TophatPrior([0,0,0,150,2],[1,5,1,350,15])
+    priors = TophatPrior([0,0,0,50,2],[1,10,10,1000,50])
     tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
     firstWeight = np.ones(numParticule) / numParticule
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
@@ -280,7 +280,17 @@ if __name__ == '__main__' :
                                 dead+=1
                                 logging.warning("task "+tasks[tid]['remote_id']+" not running")
                         else: #job has been found running on the remote machine so next time if it's not found anymore it means it'sdead:
-                            tasks[tid]['timer']=timer - 1
+                            if(os.getenv('BSC_MACHINE') == 'nord3'): ##not so easy as the jobs reamins in memory 
+                                try:
+                                    stat=re.search(str(tasks[tid]['remote_id'])+'\s\w+\s([A-Z]+)\s.*',out).group(1)
+                                    print(stat)
+                                    if(stat=="DONE"):
+                                        tasks[tid]['status']="dead"
+                                        dead+=1 #this is not consistent with following if
+                                except:
+                                    logging.warning("Uknown message"+out+"returned by bjobs")
+                            else: #we are on mn4, the jobs is done and not tracket by bjobs anymore, the jobs has been sent but is not tracked yet by bjobs.
+                                tasks[tid]['timer']=timer - 1
 
 
 
