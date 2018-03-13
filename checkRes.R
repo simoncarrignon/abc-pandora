@@ -531,7 +531,11 @@ getListScoreFold <- function(fold){
 getMin <- function(){
 row=names(which.min(apply( multiexp$count,1,min,na.rm=T)) )
 col=names(which.min(apply( multiexp$count,2,min,na.rm=T)) )
-best=cbind(multiexp$div[row,col],multiexp$count[row,col])
+
+row=names(which.max(apply( multiexp$div,1,max,na.rm=T)) )
+col=names(which.max(apply( multiexp$div,2,max,na.rm=T)) )
+
+wors=cbind(multiexp$div[row,col],absdif$div[row,col])
 multiexp$count=score$zscore$nonprop$dis
 multiexp$div=score$zscore$nonprop$div
 absdif$count=score$absdiff$nonprop$dis
@@ -630,10 +634,10 @@ getFolderMinFromList <- function(inlist)list(fold=names(which.min(apply(inlist,2
 getFolderMaxFromList <- function(inlist)list(fold=names(which.max(apply(inlist,2,max,na.rm=T)) ),year=names(which.max(apply(inlist,1,max,na.rm=T)) ))
 dis
 pdf("~/presModel/zscorePSZIE.pdf")
-plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(.5,length(rownames(multiexp$div))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="size of P (y)" )
+plot(1,1,ylim=range(enscore$absdiff$prop$dis,na.rm=T),xlim=c(.5,length(rownames(enscore$absdiff$prop$dis))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="size of P (y)" )
 axis(2)
 axis(1,1:length(rownames(multiexp$div)),label=rownames(multiexp$div))
-apply(multiexp$div,2,lines,col=alpha("black",.5),lwd=.5)
+apply(enscore$absdiff$prop$dis,2,lines,col=alpha("black",.5),lwd=.1)
 dev.off()
 
 pdf("~/presModel/zscorePSZIEcount.pdf")
@@ -671,6 +675,13 @@ size=rev(1:length(years))
 names(size)=years
 sapply(years,function(u){par(new=T);plotSiteWithGood(getRealDataCount(numperiods=u,pattern="dis",proportion=T),ylim=c(0,1),axes=F,legend=c(),alph=1/(size[as.character(u)]),lwd=size[as.character(u)])})  
 sapply(years,function(u){par(new=T);plotSiteWithGood(getRealDataCount(numperiods=u,pattern="div",proportion=T),ylim=c(0,1),axes=F,legend=c(),alph=1,lwd=.5)})  
+
+cole=names(which.min(apply( enscore$absdiff$nonprop$dis,2,min,na.rm=T)) )
+rowe=names(which.min(apply( enscore$absdiff$nonprop$dis,1,min,na.rm=T)) )
+beste=cbind(enscore$absdiff$nonprop$dis[rowe,cole],$count[rowe,cole])
+
+plot(enscore$absdif$prop$dis[,11],enscore$absdif$prop$div[,11],col=colyear[rownames(enscore$absdif$prop$div)],pch=20)
+plot(enscore$absdif$prop$dis[,11],enscore$absdif$prop$div[,11])
 }
 
 getUnderValue <- function(inlist,val){
