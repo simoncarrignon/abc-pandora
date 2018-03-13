@@ -140,10 +140,12 @@ class Experiment:
                         self.score=float(file_score.readline().strip())
                 except :
                         logging.warning("score in a bad format")
+                        self.score=10000
+                        self.consistency=False
                 self.clean()
         
         except IOError:
-            logging.debug(str(self)+" still loading")
+            #logging.debug(str(self)+" still loading")
             self.score=-1
     #check if the score exist and return it, fi not return -1
     def getScore(self):
@@ -157,7 +159,7 @@ class Experiment:
     def generateTask(self):
         n_years=50
         pattern="dis" 
-        numsite=60
+        numsite=200
         diffstr="enriscore" 
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
