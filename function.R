@@ -20,7 +20,6 @@ absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
 enriscore <- function(sim,dat){sqrt(sum((sim-dat)^2))/length(sim)}
 
-<<<<<<< HEAD
 czf <- function(sim,dat){
 	absdif=abs(sim - dat)
 	corrected_mean=apply(absdif,2,function(c)mean(c[c>0]))
