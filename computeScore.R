@@ -10,8 +10,9 @@ source("function.R")
 expDir=commandArgs()[7]
 granularity=as.numeric(commandArgs()[8])
 diffstr=commandArgs()[9]
-pattern=commandArgs()[10]
+pattern=as.character(commandArgs()[10])
 numsite=as.numeric(commandArgs()[11])
+print(commandArgs())
 
 print(diffstr)
 difffun = absdiff
@@ -19,7 +20,7 @@ difffun = absdiff
 if(is.na(numsite) || numsite == "" )
 	numsite=NULL
 
-if(!(is.na(diffstr) || diffstr == "" ))
+if(!(is.na(diffstr) || diffstr != "" ))
 	difffun = get(diffstr) 
 #get allows to find the function with a name that match the string in `diffstr`
 
@@ -32,16 +33,16 @@ print(difffun)
 #This script as no meaning outside the ABC framework
 #In fact this script SHOULD BE implemented as a method eof Experiments, in order to allow the framework to work with any kind of EXPERIMENTS
 
-dataGran=paste0("simpsonData",granularity,".bin")
-if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
-	data=read.csv("~/data_per_year.csv")
-	data$goods=data$Fabric
-	data$date=cut(data$date,breaks=granularity) 
-	realdata=sapply( levels(data$goods) , function(g)sapply(sort(unique(data$date)),function(ts){length(unique(data$Location_ascii[data$date == ts & data$goods == g]))}))
-	save(realdata,file=dataGran)
-}else{
-	load(dataGran)
-}
+#dataGran=paste0("simpsonData",granularity,".bin")
+#if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
+#	data=read.csv("~/data_per_year.csv")
+#	data$goods=data$Fabric
+#	data$date=cut(data$date,breaks=granularity) 
+#	realdata=sapply( levels(data$goods) , function(g)sapply(sort(unique(data$date)),function(ts){length(unique(data$Location_ascii[data$date == ts & data$goods == g]))}))
+#	save(realdata,file=dataGran)
+#}else{
+#	load(dataGran)
+#}
 
 
 
@@ -49,7 +50,8 @@ if(!file.exists(dataGran)){ ##if else to avoid recreate each time very long file
 #load simulation data
 rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
 #simu=agentWith(rawdatasimu,min=1,breaks=granularity)
-simu=t(agentWith(rawdatasimu,min=1,numsite = numsite ,breaks=granularity,type=pattern))
+simu=agentWith(rawdatasimu,min=1,numsite = numsite ,numperiods=granularity,pattern=pattern)
+realdata=getRealDataCount(numperiods=granularity,proportion=T,pattern=pattern)
 
 #print(paste(" simu: r",nrow(simu)," x c",ncol(simu)))
 #print(paste(" realdata: r",nrow(realdata)," x c",ncol(realdata)))
