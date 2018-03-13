@@ -7,9 +7,27 @@ simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simp
 
 zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean)))}
 
+difzs <- function(sim,dat){return(realzscore(sim)-realzscore(dat))}
+
+realzscore <- function(dat){
+	mu=apply(dat,2,mean)
+	si=apply(dat,2,sd)
+	(dat-mu)/si
+	abs(t(apply(dat,1,function(x)(x-mu)/si)))
+}
+
 absdiff <- function(sim,dat){mean(apply(abs(sim-dat),2,mean))}
 
 enriscore <- function(sim,dat){sqrt(sum((sim-dat)^2))/length(sim)}
+
+czf <- function(sim,dat){
+	absdif=abs(sim - dat)
+	corrected_mean=apply(absdif,2,function(c)mean(c[c>0]))
+	corrected_sd=apply(absdif,2,function(c)sd(c[c>0]))
+	colzscore=sapply(colnames(absdif),function(col){absdif[absdif[,col]>0,col]=(absdif[absdif[,col]>0,col] - corrected_mean[col])/corrected_sd[col];return(absdif[,col])})
+	return(mean(apply(abs(colzscore),1,mean)))
+}
+simplediff <- function(sim,dat){mean(abs(sim - dat))}
 
 
 computeSimpsonForOneExpe  <-  function(expe,jf=sum,breaks,min)apply(agentWith(expe,numperiods=breaks,joinfunction=jf,min=min),1,simpsonDiv) #this compute  the  simson index of the number of settlement with differents good for one experiments
