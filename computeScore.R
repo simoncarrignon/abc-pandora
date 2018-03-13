@@ -53,6 +53,8 @@ rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
 simu=agentWith(rawdatasimu,min=1,numsite = numsite ,numperiods=granularity,pattern=pattern)
 realdata=getRealDataCount(numperiods=granularity,proportion=T,pattern=pattern)
 
+simu[is.na(simu)]=0
+
 #print(paste(" simu: r",nrow(simu)," x c",ncol(simu)))
 #print(paste(" realdata: r",nrow(realdata)," x c",ncol(realdata)))
 #compute the score
