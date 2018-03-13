@@ -155,13 +155,16 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-        n_years=30
+        n_years=50
+        pattern="dis" 
+        numsite=60
+        diffstr="enriscore" 
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
         if(os.getenv('BSC_MACHINE') == 'mn4'):
             bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+'\n'
         if(os.getenv('BSC_MACHINE') == 'nord3'):
-            bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+'\n'
+            bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+' ' + str(diffstr)+' ' + str(pattern)+' ' + str(numsite)+'\n'
         #bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
         
