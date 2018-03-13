@@ -213,7 +213,7 @@ for(pr in c(T,F)){
  score=lapply(list(absdiff=absdiff,zscore=zscore),function(diff)lapply(list(nonprop=F,prop=T),function(p)lapply(list(dis=realdatadistributions,div=realdatadiversities),function(rdt)getAllScores(smaller[2:6],years,diff=absdiff,pattern=rdt,prop=T))))
 
 years=seq(10,100,30)
-names(years)=seq(10,100,30)
+names(years)=years
   score=lapply(list(absdiff=absdiff,zscore=zscore),function(diff)
 	       lapply(list(nonprop=F,prop=T),function(p)
 		      lapply(list(dis="dis",div="div"),function(rdt)
@@ -223,4 +223,46 @@ names(years)=seq(10,100,30)
 	       )
 
 
-getAllScores(smaller[2:5],allperiods=years,diff=absdiff,pattern="dis",proportion=T)
+getAllScores(smaller[2:5],allperiods=years,diff=absdiff,pattern="dis",proportion=T,par=F)
+getAllScores(smaller[2:5],allperiods=years,diff=enriscore,pattern="dis",proportion=T,par=F)
+
+#plotSiteWithGood( getRealDataCount(400,proportion=F))
+#dev.new()
+#plotSiteWithGood( getRealDataCount(200,proportion=F))
+#dev.new()
+#plotSiteWithGood( getRealDataCount(100,proportion=F))
+
+countest=agentWith(simsample,numperiods=20,pattern="dis",numsite=40,proportion=F)
+rco=getRealDataCount(numperiods=20,pattern="dis",proportion=F)
+enriscore(countest,countest)
+absdiff(countest,countest)
+zscore(countest,countest)
+difzs(countest,rco)
+
+
+corrected_zscore=t(apply(absscore,1,function(x)if(x>0){(x-corrected_mean)/corrected_sd}else rep(0,length(x))))
+corrected_zscore=t(apply(absscore,1,function(x) print(x[x>0])))
+
+apply(absscore,1,function(x)print(x[x>0]))
+corrected_mean
+
+
+car(mfrow=c(3,2))
+plotSiteWithGood(countest) 
+plotSiteWithGood(rco)
+plotSiteWithGood(absscore) 
+plotSiteWithGood(abs(colzscore))
+plotSiteWithGood(absscore^2)
+plot(apply(abs(colzscore),1,mean),type="l",lwd=3)
+zscore(countest,rco)
+
+
+
+czf(rco,rco+(runif(length(countest))*50))
+enriscore(rco,rco+(runif(length(countest))*10))
+enriscore(rco,rco+(runif(length(countest))*10))
+czf(rco,rco+(runif(length(countest))*50))
+scorefun=list(enriscore=enriscore,zscore=zscore,absdiff=absdiff,czf=czf,simplediff=simplediff)
+names(scorefun)=list(enriscore,zscore,absdiff,czf,simplediff)
+tut=sapply(scorefun,function(diff,data=rco)sapply(exp(seq(.5,5,.1)),function(noise)diff(data,data+(runif(length(data))*noise))))
+
