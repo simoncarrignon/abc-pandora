@@ -1,8 +1,7 @@
 library(microbenchmark)
-library(parallel)
  #simsample=read.csv("realIntro/CITIESPL/eps_0.0894/1001_7_0.912010943817_9.1299684722_6.29840023737/agents.csv",sep=";")
  #save(simsample,file="simsample.bin")
- load("simsample.bin")
+ load(simsample)
 ##this file used to benchmark two version of the count of number of agent
 
 agentWithMatrixWay <- function(expe,goods=NULL,timestep=NULL,breaks=NULL,joinfunction=sum,min=1,numsite=NULL,bias=NULL){
@@ -183,10 +182,6 @@ sapl=microbenchmark(agentWith(mi,numsite=250,breaks=50))
  }
  }
 
-
- parSapply(cl,seq(10,100,5),function(ss)agentWith(simsample,numperiods=ss,numsite=40,proportion=F,pattern="div",bias=1))
- ulu=sapply(seq(10,100,5),function(ss)zscore(agentWith(simsample,numperiods=ss,numsite=40,proportion=F,pattern="div",bias=1),getRealDataCount(numperiods=ss,pattern="div",proportion=F)))
- 
 		
 	 for(pr in c(T,F)){
 		 for(pa in c("div","dis")){
@@ -195,8 +190,8 @@ sapl=microbenchmark(agentWith(mi,numsite=250,breaks=50))
 		 }
 	 }
 
-			 agentWith(simsample,numperiods=3,numsite=100,proportion=pr,pattern="dis",bias=.5,min=1)
-	 agentWith(simsample,numperiods=10,numsite=6000,proportion=pr,pattern=pa,bias=.1,min=1)
+			 agentWith(simsample,numperiods=3,numsite=100,proportion=pr,pattern=pa,bias=.5,min=1)
+			 agentWith(simsample,numperiods=3,numsite=6000,proportion=pr,pattern=pa,bias=.1,min=1)
 			 agentWith(simsample,numperiods=3,numsite=1,proportion=pr,pattern=pa,bias=1,min=1)
 
  bias=seq(0,1,.2)
@@ -209,60 +204,3 @@ for(pr in c(T,F)){
 		boxplot(map,main=paste(pr,pa),ylim=c(0.1,0.15))
 	}
 }
-
- score=lapply(list(absdiff=absdiff,zscore=zscore),function(diff)lapply(list(nonprop=F,prop=T),function(p)lapply(list(dis=realdatadistributions,div=realdatadiversities),function(rdt)getAllScores(smaller[2:6],years,diff=absdiff,pattern=rdt,prop=T))))
-
-years=seq(10,100,30)
-names(years)=years
-  score=lapply(list(absdiff=absdiff,zscore=zscore),function(diff)
-	       lapply(list(nonprop=F,prop=T),function(p)
-		      lapply(list(dis="dis",div="div"),function(rdt)
-			     getAllScores(smaller[2:5],allperiods=years,diff=diff,pattern=rdt,proportion=p)
-			     )
-		      )
-	       )
-
-
-getAllScores(smaller[2:5],allperiods=years,diff=absdiff,pattern="dis",proportion=T,par=F)
-getAllScores(smaller[2:5],allperiods=years,diff=enriscore,pattern="dis",proportion=T,par=F)
-
-#plotSiteWithGood( getRealDataCount(400,proportion=F))
-#dev.new()
-#plotSiteWithGood( getRealDataCount(200,proportion=F))
-#dev.new()
-#plotSiteWithGood( getRealDataCount(100,proportion=F))
-
-countest=agentWith(simsample,numperiods=20,pattern="dis",numsite=40,proportion=F)
-rco=getRealDataCount(numperiods=20,pattern="dis",proportion=F)
-enriscore(countest,countest)
-absdiff(countest,countest)
-zscore(countest,countest)
-difzs(countest,rco)
-
-
-corrected_zscore=t(apply(absscore,1,function(x)if(x>0){(x-corrected_mean)/corrected_sd}else rep(0,length(x))))
-corrected_zscore=t(apply(absscore,1,function(x) print(x[x>0])))
-
-apply(absscore,1,function(x)print(x[x>0]))
-corrected_mean
-
-
-car(mfrow=c(3,2))
-plotSiteWithGood(countest) 
-plotSiteWithGood(rco)
-plotSiteWithGood(absscore) 
-plotSiteWithGood(abs(colzscore))
-plotSiteWithGood(absscore^2)
-plot(apply(abs(colzscore),1,mean),type="l",lwd=3)
-zscore(countest,rco)
-
-
-
-czf(rco,rco+(runif(length(countest))*50))
-enriscore(rco,rco+(runif(length(countest))*10))
-enriscore(rco,rco+(runif(length(countest))*10))
-czf(rco,rco+(runif(length(countest))*50))
-scorefun=list(enriscore=enriscore,zscore=zscore,absdiff=absdiff,czf=czf,simplediff=simplediff)
-names(scorefun)=list(enriscore,zscore,absdiff,czf,simplediff)
-tut=sapply(scorefun,function(diff,data=rco)sapply(exp(seq(.5,5,.1)),function(noise)diff(data,data+(runif(length(data))*noise))))
-

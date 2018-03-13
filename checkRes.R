@@ -536,6 +536,7 @@ row=names(which.max(apply( multiexp$div,1,max,na.rm=T)) )
 col=names(which.max(apply( multiexp$div,2,max,na.rm=T)) )
 
 wors=cbind(multiexp$div[row,col],absdif$div[row,col])
+best=cbind(multiexp$div[row,col],multiexp$count[row,col])
 multiexp$count=score$zscore$nonprop$dis
 multiexp$div=score$zscore$nonprop$div
 absdif$count=score$absdiff$nonprop$dis
