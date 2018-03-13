@@ -3,16 +3,6 @@ source("abctools.R")
 
 
 #file copied from previous script to draw the results of the ABC runs
-
-getlistParticlesFromPath <- function(path){
-	lf=list.files(path,pattern="resul_*")
-	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
-	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
-	names(listParticles)=epsilon
-	listParticles=lapply(listParticles,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
-	return(listParticles)
-}
-
 computeScores  <-  function(fold,sample,...){
 
 	expe=list()
@@ -536,7 +526,6 @@ row=names(which.max(apply( multiexp$div,1,max,na.rm=T)) )
 col=names(which.max(apply( multiexp$div,2,max,na.rm=T)) )
 
 wors=cbind(multiexp$div[row,col],absdif$div[row,col])
-best=cbind(multiexp$div[row,col],multiexp$count[row,col])
 multiexp$count=score$zscore$nonprop$dis
 multiexp$div=score$zscore$nonprop$div
 absdif$count=score$absdiff$nonprop$dis
@@ -635,35 +624,35 @@ getFolderMinFromList <- function(inlist)list(fold=names(which.min(apply(inlist,2
 getFolderMaxFromList <- function(inlist)list(fold=names(which.max(apply(inlist,2,max,na.rm=T)) ),year=names(which.max(apply(inlist,1,max,na.rm=T)) ))
 dis
 pdf("~/presModel/zscorePSZIE.pdf")
-plot(1,1,ylim=range(enscore$absdiff$prop$dis,na.rm=T),xlim=c(.5,length(rownames(enscore$absdiff$prop$dis))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="size of P (y)" )
+plot(1,1,ylim=range(enscore$absdiff$prop$dis,na.rm=T),xlim=c(.5,length(rownames(enscore$absdiff$prop$dis))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="number of periods" )
 axis(2)
-axis(1,1:length(rownames(multiexp$div)),label=rownames(multiexp$div))
+axis(1,1:length(rownames(enscore$absdiff$prop$dis)),label=rownames(enscore$absdiff$prop$dis))
 apply(enscore$absdiff$prop$dis,2,lines,col=alpha("black",.5),lwd=.1)
 dev.off()
 
 pdf("~/presModel/zscorePSZIEcount.pdf")
-plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(.5,length(rownames(multiexp$count))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="size of P (y)" )
+plot(1,1,ylim=range(multiexp$count,na.rm=T),xlim=c(.5,length(rownames(multiexp$count))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="number of periods" )
 axis(2)
 axis(1,1:length(rownames(multiexp$count)),label=rownames(multiexp$count))
 apply(multiexp$count,2,lines,col=alpha("black",.5),lwd=.5)
 dev.off()
 
 pdf("~/presModel/absdifPSZIE.pdf")
-plot(1,1,ylim=range(absdif$div,na.rm=T),xlim=c(.5,length(rownames(absdif$div))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="size of P (y)" )
+plot(1,1,ylim=range(absdif$div,na.rm=T),xlim=c(.5,length(rownames(absdif$div))+.5),axes=F,ylab=" score" ,col=alpha("black",.5),xlab="number of periods" )
 axis(2)
 axis(1,1:length(rownames(absdif$div)),label=rownames(absdif$div))
 apply(absdif$div,2,lines,col=alpha("black",.5),lwd=.5)
 dev.off()
 
 pdf("~/presModel/absdifPSZIEcount.pdf")
-plot(1,1,ylim=range(absdif$count,na.rm=T),xlim=c(.5,length(rownames(absdif$count))+.5),axes=F,ylab=" score" ,col=alpha("black",.1),xlab="size of P (y)" )
+plot(1,1,ylim=range(absdif$count,na.rm=T),xlim=c(.5,length(rownames(absdif$count))+.5),axes=F,ylab=" score" ,col=alpha("black",.1),xlab="number of periods" )
 axis(2)
 axis(1,1:length(rownames(absdif$count)),label=rownames(absdif$count))
 apply(absdif$count,2,lines,col=alpha("black",.5),lwd=.5)
 dev.off()
 
 pdf("~/presModel/absdifPROP_propPSZIE.pdf")
-plot(1,1,ylim=range(absdifPROP$div,na.rm=T),xlim=c(.5,length(rownames(absdifPROP$div))+.5),axes=F,ylab=" score" ,col=alpha("black",.1),xlab="size of P (y)" )
+plot(1,1,ylim=range(absdifPROP$div,na.rm=T),xlim=c(.5,length(rownames(absdifPROP$div))+.5),axes=F,ylab=" score" ,col=alpha("black",.1),xlab="number of periods" )
 axis(2)
 axis(1,1:length(rownames(absdifPROP$div)),label=rownames(absdifPROP$div))
 apply(absdifPROP$div,2,lines,col=alpha("black",.1),lwd=.05)
@@ -682,7 +671,12 @@ rowe=names(which.min(apply( enscore$absdiff$nonprop$dis,1,min,na.rm=T)) )
 beste=cbind(enscore$absdiff$nonprop$dis[rowe,cole],$count[rowe,cole])
 
 plot(enscore$absdif$prop$dis[,11],enscore$absdif$prop$div[,11],col=colyear[rownames(enscore$absdif$prop$div)],pch=20)
-plot(enscore$absdif$prop$dis[,11],enscore$absdif$prop$div[,11])
+plot(enscore$absdif$prop$dis[11,],enscore$absdif$prop$div[11,])
+hist(1/2*enscore$absdif$prop$dis[11,]+1/2*enscore$absdif$prop$div[11,])
+which.min(1/2*enscore$absdif$prop$dis[11,]+1/2*enscore$absdif$prop$div[11,])
+which.min(enscore$absdif$prop$dis[11,])
+enscore$absdif$prop$div[11,71]
+rownames(enscore$absdif$prop$div)[11]
 }
 
 getUnderValue <- function(inlist,val){
