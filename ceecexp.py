@@ -65,12 +65,17 @@ class Experiment:
         self.outpath=outpath
         self.score=-1
 
+        self.numperiods=10
+        self.pattern="dis" 
+        self.numsite=200
+        self.diffstr="enriscore" 
+
         if((int(self.params[indices['cstep']]) < 1 ) or  #No experiments if no cultural step
            #(int(self.params[indices['nag_good']]) < 1) or  #if num <2 
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
            (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
-           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < 50 ) or #not enough cultural step to extract meaningful information
+           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < self.numperiods ) or #not enough cultural step to extract meaningful information
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
@@ -157,21 +162,17 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-        numperiods=50
-        pattern="dis" 
-        numsite=200
-        diffstr="enriscore" 
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
-        rargs=" ".join(self.particleDirectory,str(numperiods),str(diffstr), str(pattern),str(numsite))
+        rargs=" ".join([self.particleDirectory,str(self.numperiods),str(self.diffstr), str(self.pattern),str(self.numsite)])
         if(os.getenv('BSC_MACHINE') == 'mn4'):
             bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R '
         if(os.getenv('BSC_MACHINE') == 'nord3'):
             bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R '
         else:
-            bashCommand += 'Rscript --vanilla computeScore.R '
-        bashCommand += rargs
-
+            bashCommand += 'Rscript --vanilla computeScore.R'
+        bashCommand += rargs + "\n"
+        print(bashCommand)
         #bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
         
