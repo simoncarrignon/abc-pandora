@@ -70,7 +70,7 @@ class Experiment:
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
            (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
-           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < 30 ) or #not enough cultural step to extract meaningful information
+           (self.params[indices['nstep']]/(self.params[indices['cstep']]) < 50 ) or #not enough cultural step to extract meaningful information
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
            #(self.params[indices['market_size']] > 1 ) or  #no need to explore more than 100% of the market
@@ -94,7 +94,7 @@ class Experiment:
             soup["culture"]['copy']=str(self.params[indices['copy']])
             soup["numSteps"]['value']=str(int(self.params[indices['nstep']])*3)
             soup["numSteps"]['serializeResolution']=str(3*int(self.params[indices['cstep']]))
-            soup["events"]['rate']=str(int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) ))
+            #soup["events"]['rate']=str(int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) ))
 
 
             #TODO .createFolder()
@@ -157,21 +157,26 @@ class Experiment:
 
     #generate a string that countain the command that should be run on marenostrum
     def generateTask(self):
-        n_years=50
+        numperiods=50
         pattern="dis" 
         numsite=200
         diffstr="enriscore" 
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
+        rargs=" ".join(self.particleDirectory,str(numperiods),str(diffstr), str(pattern),str(numsite)
         if(os.getenv('BSC_MACHINE') == 'mn4'):
-            bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+'\n'
+            bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R '
         if(os.getenv('BSC_MACHINE') == 'nord3'):
-            bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R ' + self.particleDirectory + ' ' + str(n_years)+' ' + str(diffstr)+' ' + str(pattern)+' ' + str(numsite)+'\n'
+            bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R '
+        else
+            bashCommand += 'Rscript --vanilla computeScore.R '
+        bashCommand += rargs
+
         #bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
         
-    #remove the entire folder of the particul
-    def remove(self):
+    #remove the entire folder of the particle
+    def remove(self)
         try:
             subprocess.Popen(["rm","-rf",self.particleDirectory])
             logging.info("rm:"+self.expId+",score was:"+str(self.score))

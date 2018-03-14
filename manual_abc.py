@@ -87,7 +87,7 @@ def writeNupdate(tmp_pdict):
 
         countExpKind[kind]=countExpKind[kind]+1 #increase number of expe of this kind
 
-        if(countExpKind[kind] > numproc_node): #if number of expe is too high, increase number of file 
+        if(countExpKind[kind] > (numproc_node-1)): #if number of expe is too high, increase number of file 
             #TODO here should launch the file already full fullfillfillfull
             countFileKind[kind]=countFileKind[kind]+1
             countExpKind[kind]=0
@@ -283,7 +283,6 @@ if __name__ == '__main__' :
                             if(os.getenv('BSC_MACHINE') == 'nord3'): ##not so easy as the jobs reamins in memory 
                                 try:
                                     stat=re.search(str(tasks[tid]['remote_id'])+'\s\w+\s([A-Z]+)\s.*',out).group(1)
-                                    print(stat)
                                     if(stat=="DONE"):
                                         tasks[tid]['status']="dead"
                                         dead+=1 #this is not consistent with following if
