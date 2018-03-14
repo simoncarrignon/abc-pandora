@@ -163,12 +163,12 @@ class Experiment:
         diffstr="enriscore" 
         #print("run pandora")
         bashCommand = 'cd '+self.particleDirectory + ' && ./province && ./analysis ' +' && cd - &&'
-        rargs=" ".join(self.particleDirectory,str(numperiods),str(diffstr), str(pattern),str(numsite)
+        rargs=" ".join(self.particleDirectory,str(numperiods),str(diffstr), str(pattern),str(numsite))
         if(os.getenv('BSC_MACHINE') == 'mn4'):
             bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R '
         if(os.getenv('BSC_MACHINE') == 'nord3'):
             bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R '
-        else
+        else:
             bashCommand += 'Rscript --vanilla computeScore.R '
         bashCommand += rargs
 
@@ -176,7 +176,7 @@ class Experiment:
         return bashCommand
         
     #remove the entire folder of the particle
-    def remove(self)
+    def remove(self):
         try:
             subprocess.Popen(["rm","-rf",self.particleDirectory])
             logging.info("rm:"+self.expId+",score was:"+str(self.score))
