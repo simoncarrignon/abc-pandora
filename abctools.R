@@ -380,3 +380,18 @@ getlistParticlesFromPath <- function(path){
 	return(listParticles)
 }
 
+
+#plot a densites of all epsilon for all thethas of a list of particles
+plotDensity <- function(table,param,...){
+	rng=range(table[,param])
+	print(rng)
+	from=rng[1]
+	to=rng[2]
+	#htcolF=c(rgb(34, 139, 34,127.5,maxColorValue=255),rgb(178, 255, 255,127.5,maxColorValue=255))
+	densitiesPrio=density(table[,param],from=from,to=to)
+	rangex=range(densitiesPrio$x)
+	rangey=range(densitiesPrio$y*1.1)
+	par(mar=c(5,5,1,1))
+	plot(0,0,ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
+	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),lwd=2)
+}
