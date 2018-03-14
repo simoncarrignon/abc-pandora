@@ -172,7 +172,6 @@ class Experiment:
         else:
             bashCommand += 'Rscript --vanilla computeScore.R'
         bashCommand += rargs + "\n"
-        print(bashCommand)
         #bashCommand += 'rm -rf '+os.path.join(self.particleDirectory,"data") + ' '+os.path.join(self.particleDirectory,"logs")+ ' '+os.path.join(self.particleDirectory,"*.gdf \n")
         return bashCommand
         
