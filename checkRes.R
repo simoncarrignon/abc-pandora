@@ -338,6 +338,11 @@ exploreZscore <- function(){
 	absdif=list()
 	multiexp=list()
 
+
+	plotAllDensities(getlistParticlesFromPath("newscore/"))
+	nsall=getlistParticlesFromPath("newscore/")
+	u=nsall[["0.1057"]]
+
 	years=seq(10,100,5)
 	names(years)=seq(10,100,5)
 
@@ -405,7 +410,7 @@ test=getAllScores(datalist[1:4],years,diff=absdiff,pattern=realdatadistributions
 	#save(absdif,file="absdif" )
 	#save(multiexp,file="multiexp" )
 
-	years=rownames(eultiexp$count)
+	years=rownames(multiexp$count)
 	colyear=topo.colors(length(years))
 	names(colyear)=years
 	plot(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
@@ -526,14 +531,14 @@ row=names(which.max(apply( multiexp$div,1,max,na.rm=T)) )
 col=names(which.max(apply( multiexp$div,2,max,na.rm=T)) )
 
 wors=cbind(multiexp$div[row,col],absdif$div[row,col])
-multiexp$count=score$zscore$nonprop$dis
-multiexp$div=score$zscore$nonprop$div
-absdif$count=score$absdiff$nonprop$dis
-absdif$div=score$absdiff$nonprop$div
-absdifPROP$div=score$absdiff$prop$div
-absdifPROP$count=score$absdiff$prop$dis
-zscorePROP$count=score$zscore$prop$dis
-zscorePROP$div=score$zscore$prop$div
+multiexp$count=rbind(enscore$zscore$nonprop$dis,score$zscore$nonprop$dis)
+multiexp$div=rbind(enscore$zscore$nonprop$div,score$zscore$nonprop$div)
+absdif$count=rbind(enscore$absdiff$nonprop$dis,score$absdiff$nonprop$dis)
+absdif$div=rbind(enscore$absdiff$nonprop$div,score$absdiff$nonprop$div)
+absdifPROP$div=rbind(enscore$absdiff$prop$div,score$absdiff$prop$div)
+absdifPROP$count=rbind(enscore$absdiff$prop$dis,score$absdiff$prop$dis)
+zscorePROP$count=rbind(enscore$zscore$prop$dis,score$zscore$prop$dis)
+zscorePROP$div=rbind(enscore$zscore$prop$div,score$zscore$prop$div)
 pdf("~/presModel/zscorePATTERNtest.pdf")
 plot(multiexp$count ~ multiexp$div,col=colyear[rownames(multiexp$count)],pch=20)
 dev.off()
@@ -547,7 +552,7 @@ pdf("~/presModel/2scoretestCOUNT.pdf")
 plot(multiexp$count ~ absdif$count,col=colyear[rownames(multiexp$count)],pch=20,ylab="zscore",xlab="absolute diff",main="#good/site")
 dev.off()
 pdf("~/presModel/2scoretestDIV.pdf")
-plot(multiexp$div ~ absdif$div,col=colyear[rownames(multiexp$count)],pch=20,ylab="zscore",xlab="absolute diff",main="#site/good")
+plot(multiexp$dis ~ absdif$div,col=colyear[rownames(multiexp$count)],pch=20,ylab="zscore",xlab="absolute diff",main="#site/good")
 dev.off()
 points(best,col="red",cex=2)
 
@@ -666,41 +671,58 @@ names(size)=years
 sapply(years,function(u){par(new=T);plotSiteWithGood(getRealDataCount(numperiods=u,pattern="dis",proportion=T),ylim=c(0,1),axes=F,legend=c(),alph=1/(size[as.character(u)]),lwd=size[as.character(u)])})  
 sapply(years,function(u){par(new=T);plotSiteWithGood(getRealDataCount(numperiods=u,pattern="div",proportion=T),ylim=c(0,1),axes=F,legend=c(),alph=1,lwd=.5)})  
 
-cole=names(which.min(apply( enscore$absdiff$nonprop$dis,2,min,na.rm=T)) )
+cole=names(which.min(apply( enscore$absdiff$prop$dis,2,min,na.rm=T)) )
 rowe=names(which.min(apply( enscore$absdiff$nonprop$dis,1,min,na.rm=T)) )
 beste=cbind(enscore$absdiff$nonprop$dis[rowe,cole],$count[rowe,cole])
 
-plot(enscore$absdif$prop$dis[,11],enscore$absdif$prop$div[,11],col=colyear[rownames(enscore$absdif$prop$div)],pch=20)
+cole=names(which.min( enscore$absdiff$prop$dis) )
+rowe=names(which.min(apply( enscore$absdiff$nonprop$dis,1,min,na.rm=T)) )
+beste=cbind(enscore$absdiff$nonprop$dis[rowe,cole],$count[rowe,cole])
+
+getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:5],collapse=".")
+getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[6]
+plotFromSel(list(year=50,fold=getbest(enscore$absdiff$nonprop$dis)),pattern="dis")
+getbest(enscore$absdiff$prop$dis)
+getbest(enscore$absdiff$nonprop$dis)
+getbest(enscore$enriscore$prop$dis)
+getbest(enscore$enriscore$nonprop$dis)
+getbest(enscore$zscore$prop$dis)
+getbest(enscore$zscore$nonprop$dis)
+
+getbest(enscore$absdiff$prop$div)
+getbest(enscore$enriscore$prop$div)
+
+plot(enscore$zscore$prop$dis,enscore$zscore$nonprop$dis)
+
+
+getbest(enscore$zscore$prop$div)
+getbest(enscore$absdiff$prop$div)
+par(mfrow=c(1,3))
+plotSiteWithGood(agentWith(read.csv("enscore_zscore_prop_div",sep=";"),numsite=200,numperiods=50,pattern="div"))
+plotSiteWithGood(agentWith(read.csv("enscore_absdiff_prop_div",sep=";"),numsite=200,numperiods=50,pattern="div"))
+plotSiteWithGood(getRealDataCount(numperiods=50,pattern="div"))
+
+getbest(enscore$zscore$prop$div)
+getbest(enscore$absdiff$prop$div)
+par(mfrow=c(1,3))
+plotSiteWithGood(agentWith(read.csv("enscore_zscore_prop_dis",sep=";"),numsite=200,numperiods=50,pattern="dis"))
+plotSiteWithGood(agentWith(read.csv("enscore_absdiff_prop_dis",sep=";"),numsite=200,numperiods=50,pattern="dis"))
+plotSiteWithGood(getRealDataCount(numperiods=50,pattern="dis"))
+
+
+
+col=colyear[rownames(enscore$absdif$prop$div)],pch=20)
 plot(enscore$absdif$prop$dis[11,],enscore$absdif$prop$div[11,])
 hist(1/2*enscore$absdif$prop$dis[11,]+1/2*enscore$absdif$prop$div[11,])
 which.min(1/2*enscore$absdif$prop$dis[11,]+1/2*enscore$absdif$prop$div[11,])
 which.min(enscore$absdif$prop$dis[11,])
 enscore$absdif$prop$div[11,71]
 rownames(enscore$absdif$prop$div)[11]
-}
 
-getUnderValue <- function(inlist,val){
-	years=dimnames(inlist)[[1]]
-	folds=dimnames(inlist)[[2]]
-	rscores=c()
-	ryears=c()
-	rfolds=c()
-
-
-	for(year in years){
-		for(fold in folds){
-			score=inlist[year,fold]
-			if(!is.na(score)){
-			if(score < val){
-				rscores=c(rscores,score)
-				ryears=c(ryears,year)
-				rfolds=c(rfolds,fold)
-			}
-			}
-		}
-	}
-	return(cbind.data.frame(year=ryears,fold=rfolds,score=rscores))
-
+plot(enscore$zscore$prop$dis ~ enscore$enriscore$prop$dis )
+plot(enscore$zscore$prop$div ~ enscore$enriscore$prop$div )
 
 
 }
+
+
