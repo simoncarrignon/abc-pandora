@@ -81,6 +81,20 @@ sapl=microbenchmark(agentWith(mi,numsite=250,breaks=50))
  sapply(seq(10,80,20),function(i)getRealDataCount(i,proportion=T,pattern="dis")-getprop(realdatadistributions[[as.character(i)]]))
  sapply(seq(10,80,20),function(i)getRealDataCount(i,proportion=F,pattern="dis")-realdatadistributions[[as.character(i)]])
 
+ ###number of site should always be the same
+ sum(getRealDataCount(10))
+ apply(getRealDataCount(10,prop=F),1,sum)
+ apply(getRealDataCount(200,prop=F),1,sum)
+ apply(getRealDataCount(20,prop=F,goods=c("ESA","ESB","ESC")),1,sum)
+ apply(getRealDataCount(200,prop=F,goods=c("ESA","ESB","ESC")),1,sum)
+ ####
+
+ sum(getRealDataCount(10))
+ apply(getRealDataCount(10,"dis",prop=F),2,sum)
+ apply(getRealDataCount(200,"dis",prop=F),2,sum)
+ apply(getRealDataCount(20,"dis",prop=F,goods=c("ESA","ESB","ESC")),2,sum)
+ apply(getRealDataCount(200,"dis",prop=F,goods=c("ESA","ESB","ESC")),2,sum)
+
  goods=c("ESA","ESB","ESC","ESD","ITS")
  for(i in 1:length(goods)){
 	 print(i )

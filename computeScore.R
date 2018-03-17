@@ -39,7 +39,6 @@ simu[is.na(simu)]=0 #that should be useless as this check is done already in age
 #get real data
 realdata=getRealDataCount(numperiods=granularity,proportion=T,pattern=pattern)
 
-
 score=difffun(simu,realdata)
 
 print(score)

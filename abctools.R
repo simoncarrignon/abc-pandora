@@ -368,3 +368,54 @@ plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
 }
 
 
+#take a path as argument and given that this path has a list of files of the form result_epsilon.csv
+#return a list with epsilon as names and the correspondig thetas => score dataframe
+
+getlistParticlesFromPath <- function(path){
+	lf=list.files(path,pattern="resul_*")
+	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
+	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
+	names(listParticles)=epsilon
+	listParticles=lapply(listParticles,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
+	return(listParticles)
+}
+
+
+#plot a densites of all epsilon for all thethas of a list of particles
+plotDensity <- function(table,param,...){
+	rng=range(table[,param])
+	print(rng)
+	from=rng[1]
+	to=rng[2]
+	#htcolF=c(rgb(34, 139, 34,127.5,maxColorValue=255),rgb(178, 255, 255,127.5,maxColorValue=255))
+	densitiesPrio=density(table[,param],from=from,to=to)
+	rangex=range(densitiesPrio$x)
+	rangey=range(densitiesPrio$y*1.1)
+	par(mar=c(5,5,1,1))
+	plot(0,0,ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
+	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),lwd=2)
+}
+
+#from a list `inlist` of score where `names(inlist)` are the folders of the particles return a list of `\thetas`
+getThetas <- function(inlist,val=NULL,year=NULL,size=NULL){
+
+	res=c()
+	if(!is.null(year) && !is.null(size)){
+		res=t(sapply(colnames(inlist),function(fn)t(c(fold2thetas(fn),inlist[year,fn]))))
+		res=res[order(res[,6])[1:size],]
+	}
+	if(!is.null(year) && !is.null(val)){
+		res=t(sapply(colnames(inlist),function(fn)t(c(fold2thetas(fn),inlist[year,fn]))))
+		res=res[res[,6] < val,]
+	}
+
+	colnames(res)=c("nstep","cstep","mu","mumax","copy","score")
+	return(na.omit(res))
+
+
+}
+
+fold2thetas <- function(foldname){
+	return(	as.numeric(unlist(strsplit(basename(foldname),"_"))))
+}
+
