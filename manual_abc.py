@@ -83,16 +83,14 @@ def writeNupdate(tmp_pdict):
         task=one.generateTask()
 
         if( not( kind in countExpKind.keys())): #check if this kind is already recorded
-            countExpKind[kind]=0 
-            countFileKind[kind]=0
-
-        countExpKind[kind]=countExpKind[kind]+1 #increase number of expe of this kind
-
-        if(countExpKind[kind] > numproc_node): #if number of expe is too high, increase number of file 
-            #TODO here should launch the file already full fullfillfillfull
-            countFileKind[kind]=countFileKind[kind]+1
-            countExpKind[kind]=0
-
+            countExpKind[kind]=1
+            countFileKind[kind]=1
+        else:
+            countExpKind[kind]=countExpKind[kind]+1 #increase number of expe of this kind
+            if(countExpKind[kind] > (numproc_node)): #if number of expe is too high, increase number of file 
+                #TODO here should launch the file already full fullfillfillfull
+                countFileKind[kind]=countFileKind[kind]+1
+                countExpKind[kind]=1
 
         if (not os.path.isdir("taskfiles")):
             os.makedirs("taskfiles") #create folder for the taskfiles
@@ -101,14 +99,23 @@ def writeNupdate(tmp_pdict):
         taskfilename=taskid+"-"+jobid+".task"
         taskfilename=os.path.join("taskfiles",taskfilename)
 
+        while( os.path.isfile(taskfilename) and not(taskid in tasks.keys())):
+            logging.debug(taskfilename+" already exist from previous task so we have to use another one")
+            countFileKind[kind]=countFileKind[kind]+1
+            countExpKind[kind]=1
+            taskid=kind+"_"+str(countFileKind[kind])
+            taskfilename=taskid+"-"+jobid+".task"
+            taskfilename=os.path.join("taskfiles",taskfilename)
         with open(taskfilename,'a') as tskf:
             tskf.write(task)
 
     #TODO task should be handled as object
-        tasks[taskid]={}
-        tasks[taskid]['filename']=taskfilename
-        tasks[taskid]['status']='hold'
-        tasks[taskid]['kind']=kind
+        if( not( taskid in tasks.keys())): #check if this kind is already recorded
+            tasks[taskid]={}
+            tasks[taskid]['filename']=taskfilename
+            tasks[taskid]['status']='hold'
+            tasks[taskid]['kind']=kind
+
     logging.debug(tasks)
 
 ###launch batch of experiments given the machine used
@@ -182,8 +189,8 @@ if __name__ == '__main__' :
         print('not a slurm job')
 
     numeps=5
-    maxeps=0.25
-    mineps=0.11
+    maxeps=0.05
+    mineps=0.001
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     epsilons=np.append(1000,epsilons) #first round = prior check
@@ -193,7 +200,7 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
-    priors = TophatPrior([1,1,0],[80,15,1])
+    priors = TophatPrior([0,0,0,50,2],[1,10,10,1000,50])
     tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
     firstWeight = np.ones(numParticule) / numParticule
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
@@ -208,7 +215,7 @@ if __name__ == '__main__' :
             epsilon=np.round(epsilon)
         else:
             epsilon=np.round(epsilon,decimals=4)
-        print("esp"+str(epsilon))
+        pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
 
         with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
             tmp_out.write("id,score\n")
@@ -230,8 +237,8 @@ if __name__ == '__main__' :
 
             dead=0
 
-            ##################################################:LAUNCHING SLURM
             if(isNeedLauncher):
+            ##################################################:LAUNCHING (slurm or bsub given the machin)
                 for tid,tproc in tasks.items():
                     ##check status of the task
                     #if on hold it means it has been created during previous loop and has to be launched
@@ -247,6 +254,7 @@ if __name__ == '__main__' :
                                 remote_id=re.search('Job <([0-9]+)> is submitted',out).group(1)
                             tasks[tid]['status'] = 'running'
                             tasks[tid]['remote_id'] = remote_id
+                            logging.debug("lauching"+str(tid)+" on "+remote_id)
                         except:
                             logging.warning("Task ID not found")
                             tasks[tid]['status'] = ''
@@ -284,7 +292,16 @@ if __name__ == '__main__' :
                                 dead+=1
                                 logging.warning("task "+tasks[tid]['remote_id']+" not running")
                         else: #job has been found running on the remote machine so next time if it's not found anymore it means it'sdead:
-                            tasks[tid]['timer']=timer - 1
+                            if(os.getenv('BSC_MACHINE') == 'nord3'): ##not so easy as the jobs reamins in memory 
+                                try:
+                                    stat=re.search(str(tasks[tid]['remote_id'])+'\s\w+\s([A-Z]+)\s.*',out).group(1)
+                                    if(stat=="DONE"):
+                                        tasks[tid]['status']="dead"
+                                        dead+=1 #this is not consistent with following if
+                                except:
+                                    logging.warning("Uknown message"+out+"returned by bjobs")
+                            else: #we are on mn4, the jobs is done and not tracket by bjobs anymore, the jobs has been sent but is not tracked yet by bjobs.
+                                tasks[tid]['timer']=timer - 1
 
 
 
@@ -309,6 +326,8 @@ if __name__ == '__main__' :
                             pdict[tmp_exp.getId()]=tmp_exp.score
                             newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
+                if(not tmp_exp.consistence):
+                        tmp_pdict.pop(t,None)
 
             #(the pool is empty ) all simulation finished and we have not yet enough particle
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
@@ -316,6 +335,9 @@ if __name__ == '__main__' :
             #if(len(pdict) < numParticule and dead == len(tasks)): 
             logging.debug("lenpdict:"+str(len(pdict))+" len tmp_dict:"+str(len(tmp_pdict))+" len tasks:"+ str(len(tasks))+" dead:"+str(dead))
             if((len(pdict) < numParticule and len(tmp_pdict) <= 0) or (len(pdict) < numParticule and len(tasks) == dead)): 
+                if(len(tmp_pdict)>0):
+                    for i in tmp_pdict:
+                        logging.warning("those experiments should be destroyd")
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
                 tmp_pdict=renewPool(numproc,pref,oldpool)
@@ -337,7 +359,6 @@ if __name__ == '__main__' :
                     out, err = process.communicate()
                     logging.info('force: '+tasks[tid]['remote_id']+" to stop. ")
         logging.info('ABC done for epsilon='+str(epsilon))
-        pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
 
 
         new_raw=rawMatricesFromPool(newpool)
@@ -357,7 +378,7 @@ if __name__ == '__main__' :
         oldpool=new_raw
 
         tmp_pdict=renewPool(numParticule,pref,oldpool)
-        print(tmp_pdict)
+        #print(tmp_pdict)
 
         pdict={}     #list of score for each exp
         newpool={}     #list of score for each exp

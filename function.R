@@ -143,7 +143,7 @@ getSimuCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 
 
 
-diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div"){
+diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div",numsite=40){
 
     diffstr=deparse(substitute(diff))
 
@@ -161,7 +161,7 @@ diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div")
     dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
     tryCatch(
              {
-                 rdt=agentWith(dataexp,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=40)
+                 rdt=agentWith(dataexp,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=numsite)
                  return(diff(dt,rdt))
              },error=function(err){return(NA)})
 }
@@ -173,7 +173,7 @@ diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div")
 #pattern realdata to ompare 
 #par=T true if to be parallelized
 #prop=T true if to use proportions
-getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T){
+getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T,numsite=40){
 	print(par)
 	print(length(datalist))
 
@@ -182,13 +182,13 @@ getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T){
 		cl <- makeCluster(detectCores()-1,outfile="",type="FORK")
 
 
-		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
+		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
 		stopCluster(cl)
 	}
 	if(par=="mpi")
-		res=mpi.parSapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
+		res=mpi.parSapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
 	else
-		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern)},prd=allperiods)
+		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
 	return(res)
 }
 
