@@ -128,7 +128,10 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction
 
 })
 	finalres = t(finalres)
-	if(proportion)finalres=getprop(finalres)
+	if(proportion){
+		finalres=getprop(finalres)
+		finalres[is.na(finalres)]=0
+	}
 	return(finalres)
 }
 
@@ -241,17 +244,21 @@ concatlast <- function(strvec){
 	paste0(substr(strvec,nchar(strvec),nchar(strvec)),collapse="")   
 }
 
-generetclust <- function(data,numperiods=10){
+generetclust <- function(data,numperiods=100){
 
 	library(vegan)
+	library(ape)
 	data$date=cut(data$date,breaks=numperiods) 
 
 	u=tapply(data$X, data[,c("date","Fabric_rough","Location_ascii")],length)
 	u[is.na(u)]=0  
 	lisdist=lapply(rownames(u),function(l)vegdist(t(u[l,,]),method="jaccard",na.rm=T))
+	lisdist=lapply(rownames(u),function(l)vegdist(t(u[l,,]),method="jaccard",na.rm=T))
 	names(lisdist)=rownames(u)
 	names(lisdist)
 	lisdist=lapply(lisdist,function(i){i[is.na(i)]=0;return(i)})
+	njlist=lapply(lisdist,function(i){nj(i,"unrooted")})
+plot(njlist[[1]])
 
 	sapply(seq(1,500,10),function(r){png(sprintf("Bphyltree%03d.png",r),width=1400,height=1400);plot(root(as.phylo(hclust(lisdist[[names(lisdist)[r]]])),"athens"),main=paste("year",rownames(u)[r]));dev.off()})
 
