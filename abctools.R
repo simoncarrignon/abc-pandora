@@ -395,3 +395,27 @@ plotDensity <- function(table,param,...){
 	plot(0,0,ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
 	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),lwd=2)
 }
+
+#from a list `inlist` of score where `names(inlist)` are the folders of the particles return a list of `\thetas`
+getThetas <- function(inlist,val=NULL,year=NULL,size=NULL){
+
+	res=c()
+	if(!is.null(year) && !is.null(size)){
+		res=t(sapply(colnames(inlist),function(fn)t(c(fold2thetas(fn),inlist[year,fn]))))
+		res=res[order(res[,6])[1:size],]
+	}
+	if(!is.null(year) && !is.null(val)){
+		res=t(sapply(colnames(inlist),function(fn)t(c(fold2thetas(fn),inlist[year,fn]))))
+		res=res[res[,6] < val,]
+	}
+
+	colnames(res)=c("nstep","cstep","mu","mumax","copy","score")
+	return(na.omit(res))
+
+
+}
+
+fold2thetas <- function(foldname){
+	return(	as.numeric(unlist(strsplit(basename(foldname),"_"))))
+}
+
