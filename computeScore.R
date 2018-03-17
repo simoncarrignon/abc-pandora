@@ -15,16 +15,15 @@ numsite=as.numeric(commandArgs()[11])
 print(commandArgs())
 
 print(diffstr)
-difffun = absdiff
 
 if(is.na(numsite) || numsite == "" )
 	numsite=NULL
 
-if(!(is.na(diffstr) || diffstr != "" ))
+if(!(is.na(diffstr)) || diffstr != "" ){
+    print("this is")
 	difffun = get(diffstr) 
+}
 #get allows to find the function with a name that match the string in `diffstr`
-
-print(difffun)
 
 
 #check if the simpson diversity for thoses steps has been already computed
