@@ -279,3 +279,26 @@ jaccard <- function(a,b){
 	print(m10)
 	return(m11/(m01+m10+m11))
 }
+
+#use a matrix create by agentWith or getRealDataCount and print each line with different colors
+plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,...){
+if(require("RColorBrewer")){library(RColorBrewer)}
+	clrs=brewer.pal(ncol(matrixGoodPerSite),"Set2")
+	names(clrs)=colnames(matrixGoodPerSite)
+	par(xpd=NA)
+	if(is.null(main))main="Number of sites with good type"
+	if(is.null(ylab))ylab="number of sites"
+	if(is.null(xlab))xlab="period"
+
+	plot(1:nrow(matrixGoodPerSite),matrixGoodPerSite[,1] ,type="n",ylim=range(matrixGoodPerSite),bty="n",main=main,xlab=xlab,ylab=ylab,...) 
+    if(is.na(g)){
+	sapply(colnames(matrixGoodPerSite),function(i)lines(1:nrow(matrixGoodPerSite), matrixGoodPerSite[,i]   ,col=clrs[i],lwd=3))
+	text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),],labels=paste(colnames(matrixGoodPerSite)),cex=.8,adj=0)
+    }
+    else{
+	points(1:nrow(matrixGoodPerSite), matrixGoodPerSite[,g]   ,col=clrs[g],lwd=3)
+	text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),g],labels=paste(colnames(matrixGoodPerSite))[g],cex=.8,adj=0)
+    }
+	if(is.null(legend))legend("bottomright",legend=colnames(matrixGoodPerSite),col=clrs,lwd=3,cex=.8)
+
+}
