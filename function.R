@@ -302,3 +302,6 @@ if(require("RColorBrewer")){library(RColorBrewer)}
 	if(is.null(legend))legend("bottomright",legend=colnames(matrixGoodPerSite),col=clrs,lwd=3,cex=.8)
 
 }
+
+getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:5],collapse=".")
+getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[6]
