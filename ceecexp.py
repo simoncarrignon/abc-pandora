@@ -65,7 +65,7 @@ class Experiment:
         self.outpath=outpath
         self.score=-1
 
-        self.numperiods=10
+        self.numperiods=50
         self.pattern="dis" 
         self.numsite=200
         self.diffstr="enriscore" 

@@ -9,9 +9,8 @@ import subprocess
 from scipy import stats
 from sampler import TophatPrior
 from sampler import weighted_cov
-from simpleMod  import Experiment
-from simpleMod  import genData
-from simpleMod  import order
+from ceecexp import Experiment
+from ceecexp import order
 
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
@@ -167,8 +166,6 @@ def writeParticules(particules,epsi,outfilename):
 
 
 if __name__ == '__main__' :
-    Y=genData()
-    print(Y)
     pdict={}     #list of score for each exp
     newpool={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
@@ -189,13 +186,12 @@ if __name__ == '__main__' :
         print('not a slurm job')
 
     numeps=5
-    maxeps=0.05
-    mineps=0.001
+    maxeps=0.12
+    mineps=0.05
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     epsilons=np.append(1000,epsilons) #first round = prior check
     pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
-
 
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
@@ -207,7 +203,7 @@ if __name__ == '__main__' :
     oldpool["ws"]=firstWeight
     oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
 
-    isNeedLauncher=False
+    isNeedLauncher=True
     
 
     for epsilon in epsilons:
