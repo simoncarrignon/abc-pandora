@@ -1,7 +1,7 @@
 simpsonDiv <- function(x)sum((x/sum(x))^2) #Compute the simpson diversity index as 
 
 ##return proportions 
-getprop  <- function(x)x/apply(x,1,sum)
+getprop  <- function(x,total=NULL)if(is.null(total)) x/apply(x,1,sum) else x/total
 
 simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simpsonDiv)))
 
@@ -77,8 +77,6 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction
 	if(is.null(timestep))
 		timestep=unique(expe$timeStep)
 	if(is.null(numsite))
-		numsite=rep(numsite,length(timestep))
-	if(is.null(numsite))
 		numsite=length(levels(expe$agent))
 	if(length(numsite)==1){
 		numsite=rep(numsite,length(timestep))
@@ -129,7 +127,10 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction
 })
 	finalres = t(finalres)
 	if(proportion){
-		finalres=getprop(finalres)
+		##we assume that for those experiments the number of sites used to compute the score is fixed throughout periods. thus to get the we can divid by any of the element of numsite. But this could change in theory. In that case the total should be divided line by line by the element of `numsite` 
+		if(length(unique(numsite)) != 1)
+			stop("the number of site to sample is changing throuhg time")
+		finalres=getprop(finalres,total = numsite[1] )
 		finalres[is.na(finalres)]=0
 	}
 	return(finalres)
@@ -193,7 +194,7 @@ getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T,num
 }
 
 
-getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
+getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T,backupFolder="bin"){
 
 
 	#check if the simpson diversity for thoses steps has been already computed
@@ -204,8 +205,9 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 	if(is.null(goods))
 		goods=c("ESA","ESB","ESC","ESD","ITS")
 
-	filenameBackup=paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin")
+	filenameBackup=file.path(backupFolder,paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin"))
 	if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
+		dir.create(file.path(backupFolder), showWarnings = FALSE)
 		realdata=generateDataCount(numperiods,pattern,proportion,goods)
 		save(realdata,file=filenameBackup)
 	}else{
@@ -234,7 +236,7 @@ generateDataCount <- function(numperiods,pattern="div",proportion=T,goods=NULL){
 		realdata=(sapply( goods , function(g)sapply(sort(unique(data$date)),function(ts)length(unique(data$Location_ascii[data$date == ts & data$goods == g])))) )
 	if(pattern=="div")
 		realdata=(t(sapply( levels(data$date) , function(ts) table(factor(sapply(unique(data$Location_ascii),function(ag)length(unique((data$goods[data$Location_ascii==ag & data$date == ts & data$goods %in% goods])))) ,levels=0:length(goods))))))
-	if(proportion)return(getprop(realdata))
+	if(proportion)return(getprop(realdata,total = length(unique(data$Location_ascii))))
 	else return(realdata)
 }
 
