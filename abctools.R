@@ -421,6 +421,9 @@ getThetas <- function(inlist,val=NULL,year=NULL,size=NULL){
 
 #Return a vector with the thetas v=[theta1,theta2,theta3,...] from a fodlername thetas1_theta2_thetat3_...
 fold2thetas <- function(foldname){
-	return(	as.numeric(unlist(strsplit(basename(foldname),"_"))))
+
+thetas=	as.numeric(unlist(strsplit(basename(foldname),"_")))
+names(thetas)=c("nstep","cstep","mu","mumax","copy","strb")
+return(thetas)
 }
 
