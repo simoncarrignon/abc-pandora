@@ -1,13 +1,14 @@
 simpsonDiv <- function(x)sum((x/sum(x))^2) #Compute the simpson diversity index as 
 
 ##return proportions 
-getprop  <- function(x)x/apply(x,1,sum)
+getprop  <- function(x,total=NULL)if(is.null(total)) x/apply(x,1,sum) else x/total
 
 simpscore <- function(sim,dat) mean(abs(apply(sim,1,simpsonDiv)-apply(dat,1,simpsonDiv)))
 
 zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,mean))/apply(abs(sim-dat),2,sd),2,mean)))}
 
 difzs <- function(sim,dat){return(realzscore(sim)-realzscore(dat))}
+
 
 realzscore <- function(dat){
 	mu=apply(dat,2,mean)
@@ -77,8 +78,6 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction
 	if(is.null(timestep))
 		timestep=unique(expe$timeStep)
 	if(is.null(numsite))
-		numsite=rep(numsite,length(timestep))
-	if(is.null(numsite))
 		numsite=length(levels(expe$agent))
 	if(length(numsite)==1){
 		numsite=rep(numsite,length(timestep))
@@ -129,7 +128,10 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction
 })
 	finalres = t(finalres)
 	if(proportion){
-		finalres=getprop(finalres)
+		##we assume that for those experiments the number of sites used to compute the score is fixed throughout periods. thus to get the we can divid by any of the element of numsite. But this could change in theory. In that case the total should be divided line by line by the element of `numsite` 
+		if(length(unique(numsite)) != 1)
+			stop("the number of site to sample is changing throuhg time")
+		finalres=getprop(finalres,total = numsite[1] )
 		finalres[is.na(finalres)]=0
 	}
 	return(finalres)
@@ -193,7 +195,7 @@ getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T,num
 }
 
 
-getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
+getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T,backupFolder="bin"){
 
 
 	#check if the simpson diversity for thoses steps has been already computed
@@ -204,8 +206,9 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 	if(is.null(goods))
 		goods=c("ESA","ESB","ESC","ESD","ITS")
 
-	filenameBackup=paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin")
+	filenameBackup=file.path(backupFolder,paste0("realcount-",numperiods,"-",pattern,"-prop",proportion,"-",concatlast(goods),".bin"))
 	if(!file.exists(filenameBackup)){ ##if else to avoid recreate each time very long file
+		dir.create(file.path(backupFolder), showWarnings = FALSE)
 		realdata=generateDataCount(numperiods,pattern,proportion,goods)
 		save(realdata,file=filenameBackup)
 	}else{
@@ -234,7 +237,7 @@ generateDataCount <- function(numperiods,pattern="div",proportion=T,goods=NULL){
 		realdata=(sapply( goods , function(g)sapply(sort(unique(data$date)),function(ts)length(unique(data$Location_ascii[data$date == ts & data$goods == g])))) )
 	if(pattern=="div")
 		realdata=(t(sapply( levels(data$date) , function(ts) table(factor(sapply(unique(data$Location_ascii),function(ag)length(unique((data$goods[data$Location_ascii==ag & data$date == ts & data$goods %in% goods])))) ,levels=0:length(goods))))))
-	if(proportion)return(getprop(realdata))
+	if(proportion)return(getprop(realdata,total = length(unique(data$Location_ascii))))
 	else return(realdata)
 }
 
@@ -281,16 +284,18 @@ jaccard <- function(a,b){
 }
 
 #use a matrix create by agentWith or getRealDataCount and print each line with different colors
-plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,...){
+plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,alpha=NULL,ylim=NULL,...){
 if(require("RColorBrewer")){library(RColorBrewer)}
 	clrs=brewer.pal(ncol(matrixGoodPerSite),"Set2")
+    if(!is.null(alpha))clrs=alpha(clrs,alpha) 
+
 	names(clrs)=colnames(matrixGoodPerSite)
 	par(xpd=NA)
 	if(is.null(main))main="Number of sites with good type"
 	if(is.null(ylab))ylab="number of sites"
 	if(is.null(xlab))xlab="period"
-
-	plot(1:nrow(matrixGoodPerSite),matrixGoodPerSite[,1] ,type="n",ylim=range(matrixGoodPerSite),bty="n",main=main,xlab=xlab,ylab=ylab,...) 
+    if(is.null(ylim))ylim=range(matrixGoodPerSite)
+	plot(1:nrow(matrixGoodPerSite),matrixGoodPerSite[,1],ylim=ylim,type="n",,bty="n",main=main,xlab=xlab,ylab=ylab,...) 
     if(is.na(g)){
 	sapply(colnames(matrixGoodPerSite),function(i)lines(1:nrow(matrixGoodPerSite), matrixGoodPerSite[,i]   ,col=clrs[i],lwd=3))
 	text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),],labels=paste(colnames(matrixGoodPerSite)),cex=.8,adj=0)
@@ -303,5 +308,75 @@ if(require("RColorBrewer")){library(RColorBrewer)}
 
 }
 
-getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:5],collapse=".")
-getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[6]
+##return the folder name of the best simulation
+getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:6],collapse=".")
+##return a list of folder name for the top `num` best simulations
+getbestb <- function(x,num=10)sapply(strsplit(names(sort(x)[1:num]),"\\."),function(i)paste0(i[1:6],collapse=".")) 
+getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[7]
+
+#given a datalist as the one given by getAllScore, return the list of folder of the topten
+listfolder <- function(data,topten=50)
+{
+	as.vector(unlist(sapply(names(data),function(diff)
+				sapply(names(data[[diff]]),function(prop)
+				       sapply(names(data[[diff]][[prop]]),function(pat) return(getbestb(data[[diff]][[prop]][[pat]],num=topten)))
+				       )
+				)))
+}
+
+#given a datalist as the one given by getAllScore, print all the best of each core each prop etc.. 
+printAllBest <- function(data){
+	par(mfrow=c(length(data)+1,length(data[[1]])*(length(data[[1]][[1]])+1)),oma=rep(4,4))
+	sapply(names(data),function(diff)
+	 {
+		 v=sapply(names(data[[diff]]),function(prop)
+			  {
+				  u=sapply(names(data[[diff]][[prop]]),function(pat)
+					   {
+						   if(pat=="both"){
+						   printbest(data,diff,prop,pat,"dis")
+						   printbest(data,diff,prop,pat,"div")
+						   }
+						   else
+						   printbest(data,diff,prop,pat)
+						   mtext(pat,1)
+					   }
+				  )
+
+				  mtext(prop,1,2)
+				  return(u)
+
+			  }
+		 )
+
+		 mtext(diff,4)
+		 return(v)
+	 }
+	)
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="dis",proportion = F))
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="div",proportion = F))
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="dis",proportion = T))
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="div",proportion = T))
+	par(mfrow=c(1,1))
+}
+
+#print the best for one given pat, prop, diff, of a list of score
+printbest <- function(data,diff,prop,pat,patB=NULL){
+	if(is.null(patB))patB=pat
+	ip= prop == "prop"
+	elected=getbest(data[[diff]][[prop]][[pat]])
+	el=unlist(strsplit(elected,"/"))
+	plotSiteWithGood(agentWith(read.csv(file.path("exter/",elected,"agents.csv"),sep=";"),numsite=200,numperiods=50,pattern=patB,proportion = ip),main=el[length(el)])
+}
+
+getboth <- function(data,weight=c(1,1)){
+	lapply(data,function(diff)
+	       {
+		       lapply(diff,function(prop)
+			      {
+				      list(dis=prop[["dis"]],div=prop[["div"]],both=(1/2)*(prop[["div"]]*weight[1]+prop[["dis"]]*weight[2]))
+			      }
+		       )
+	       }
+	)
+}

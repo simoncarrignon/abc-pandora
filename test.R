@@ -280,3 +280,9 @@ scorefun=list(enriscore=enriscore,zscore=zscore,absdiff=absdiff,czf=czf,simpledi
 names(scorefun)=list(enriscore,zscore,absdiff,czf,simplediff)
 tut=sapply(scorefun,function(diff,data=rco)sapply(exp(seq(.5,5,.1)),function(noise)diff(data,data+(runif(length(data))*noise))))
 
+testMultisore <- function(){
+printbest(enscore,"enriscore", "prop","dis")
+dafuk$absdiff$prop$both[paste0(getbest(enscore$absdiff$prop$dis),".50")]-(1/2*enscore$absdiff$prop$dis[paste0(getbest(enscore$absdiff$prop$dis),".50")]+1/2*enscore$absdiff$prop$div[paste0(getbest(enscore$absdiff$prop$dis),".50")])
+}
+
+	microbenchmark(sapply(datalist[1],function(eij)sapply(years,function(y){zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]])})),time=1)

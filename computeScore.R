@@ -32,14 +32,32 @@ if(!(is.na(diffstr)) || diffstr != "" )
 #load simulation data
 rawdatasimu=read.csv(file.path(expDir,"agents.csv"),sep=";")
 
-simu=agentWith(rawdatasimu,min=1,numsite = numsite ,numperiods=granularity,pattern=pattern)
-
-simu[is.na(simu)]=0 #that should be useless as this check is done already in agentWith
 
 #get real data
-realdata=getRealDataCount(numperiods=granularity,proportion=T,pattern=pattern)
+if(pattern == "both")
+{
 
-score=difffun(simu,realdata)
+	simuDis=agentWith(rawdatasimu,min=1,numsite = numsite ,numperiods=granularity,pattern="div")
+	simuDiv=agentWith(rawdatasimu,min=1,numsite = numsite ,numperiods=granularity,pattern="dis")
+
+	simuDis[is.na(simuDis)]=0 #that should be useless as this check is done already in agentWith
+	simuDiv[is.na(simuDiv)]=0 #that should be useless as this check is done already in agentWith
+	realdataDiv=getRealDataCount(numperiods=granularity,proportion=T,pattern="dis")
+	realdataDis=getRealDataCount(numperiods=granularity,proportion=T,pattern="div")
+
+	scoreDis=difffun(simuDis,realdataDis)
+	scoreDiv=difffun(simuDiv,realdataDiv)
+	score=1/2*(scoreDis + scoreDiv)
+}else
+{
+
+	simu=agentWith(rawdatasimu,min=1,numsite = numsite ,numperiods=granularity,pattern=pattern)
+
+	simu[is.na(simu)]=0 #that should be useless as this check is done already in agentWith
+	realdata=getRealDataCount(numperiods=granularity,proportion=T,pattern=pattern)
+
+	score=difffun(simu,realdata)
+}
 
 print(score)
 

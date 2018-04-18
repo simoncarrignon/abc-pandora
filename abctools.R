@@ -280,17 +280,21 @@ allFromPath <- function(pathtoepsilon){
 }
 
 
-#plot \theta_a wrt to \theta_2 for all epsilon of a particle list
-plotcov <- function(listofpart,a,b){
+#plot \theta_a wrt to \theta_b for all epsilon of a particle list
+plotcov <- function(listofpart,a,b,...){
 	par(mfrow=c(1,length(listofpart)))
-	lapply(listofpart,function(u)plot(u[,a] ~ u[,b],ylab=a,xlab=b))
+	lapply(listofpart,function(u)plot(u[,a] ~ u[,b],ylab=a,xlab=b,...))
 	par(mfrow=c(1,1))
 }
 
 #plot thes densites of all epsilon for all thethas of a list of particles
 plotAllDensities <- function(table,...){
 	var=colnames(table[[1]])[!colnames(table[[1]])%in% c("epsilon","score")]
-	par(mfrow=c(2,length(var)-3))
+    nrow=round(sqrt(length(var)))
+    ncol=round(sqrt(length(var)))
+    if(nrow*ncol<length(var))
+        ncol=ncol+1
+	par(mfrow=c(ncol,nrow))
 
 	for(v in var){
 		plotDensities(table,v,names(table))
@@ -376,7 +380,7 @@ getlistParticlesFromPath <- function(path){
 	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
 	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
 	names(listParticles)=epsilon
-	listParticles=lapply(listParticles,function(u) {u$ratio = (u$cstep)/u$nstep; return(u)})
+	listParticles=lapply(listParticles,function(u) {u$ee_peryear = u$nstep/500;u$CulturalEvents = u$nstep/u$cstep; u$ce_peryear = u$CulturalEvents/500;return(u)})#u$ratio = (u$cstep)/u$nstep; u$ee_perce = (u$nstep)/u$CulturalEvents;
 	return(listParticles)
 }
 
@@ -415,7 +419,11 @@ getThetas <- function(inlist,val=NULL,year=NULL,size=NULL){
 
 }
 
+#Return a vector with the thetas v=[theta1,theta2,theta3,...] from a fodlername thetas1_theta2_thetat3_...
 fold2thetas <- function(foldname){
-	return(	as.numeric(unlist(strsplit(basename(foldname),"_"))))
+
+thetas=	as.numeric(unlist(strsplit(basename(foldname),"_")))
+names(thetas)=c("nstep","cstep","mu","mumax","copy","strb")
+return(thetas)
 }
 
