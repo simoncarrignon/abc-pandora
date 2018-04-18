@@ -216,14 +216,17 @@ if __name__ == '__main__' :
 
     for epsilon in epsilons:
         if(epsilon>1):
-            epsilon=np.round(epsilon)
+            round_epsilon=np.round(epsilon)
         else:
-            epsilon=np.round(epsilon,decimals=4)
-        pref="eps_"+str(epsilon) #this prefix is mainly use to store the data
+            round_epsilon=np.round(epsilon,decimals=4)
 
-        with open("tmp_res"+str(epsilon)+".csv",'w') as tmp_out:
-            tmp_out.write("id,score\n")
-            tmp_out.close()
+        pref="eps_"+str(round_epsilon) #this prefix is mainly use to store the data
+
+        tmpres="tmp_res"+str(round_epsilon)+".csv"
+        if(not (os.path.isfile(tmpres))):
+            with open(tmpres,'w') as tmp_out:
+                tmp_out.write("id,score\n")
+                tmp_out.close()
 
         ###initialize pool
         if( isNeedLauncher):
@@ -299,7 +302,7 @@ if __name__ == '__main__' :
                             if(os.getenv('BSC_MACHINE') == 'nord3'): ##not so easy as the jobs reamins in memory 
                                 try:
                                     stat=re.search(str(tasks[tid]['remote_id'])+'\s\w+\s([A-Z]+)\s.*',out).group(1)
-                                    if(stat=="DONE"):
+                                    if(stat=="DONE" or stat=="EXIT"):
                                         tasks[tid]['status']="dead"
                                         dead+=1 #this is not consistent with following if
                                 except:
@@ -324,7 +327,7 @@ if __name__ == '__main__' :
                         tmp_pdict.pop(t,None)
                     else:
                         if(len(pdict)<numParticule):
-                            with open("tmp_res"+str(epsilon)+".csv",'a') as tmp_out:
+                            with open(tmpres,'a') as tmp_out:
                                 tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
                                 tmp_out.close()
                             pdict[tmp_exp.getId()]=tmp_exp.score
