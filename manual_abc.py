@@ -14,6 +14,10 @@ from ceecexp import Experiment
 from ceecexp import order
 
 
+def checkTime(start_time,ttime,limit):
+    return(ttime - (time.time()-start_time) < limit) 
+
+
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
 def genTestPool(prior,N,pref):
     pool_exp={}
@@ -178,8 +182,12 @@ if __name__ == '__main__' :
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
     #epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)#changing the last argument for the time asked for subjobs (temporary, should be computed given cstep and nstep)
     stime=float(sys.argv[4])  #changing the last argument for the time asked for subjobs (temporary, should be computed given cstep and nstep)
+    ttime=float(sys.argv[5])  # total time requested 
+
+    start_time=time.time()
+
     if (not os.path.isdir("backup")): os.mkdir("backup")
-    backup_fold=os.path.join("backup",str(sys.argv[5]))  #folder for bac
+    backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for bac
     backup=True
     if (not os.path.isdir(backup_fold)): 
         os.mkdir(backup_fold)
@@ -213,6 +221,21 @@ if __name__ == '__main__' :
 
     isNeedLauncher=True
     
+    if(backup):
+        print("backup old analysis ")
+        tmp_pdict=pickle.load(open(os.path.join(backup_fold,"tmp_pdict"),"r"))
+        pdict=pickle.load(open(os.path.join(backup_fold,"pdict"),"r"))
+        oldpool=pickle.load(open(os.path.join(backup_fold,"oldpool"),"r"))
+        epsilon=pickle.load(open(os.path.join(backup_fold,"epsilon"),"r"))
+        newpool=pickle.load(open(os.path.join(backup_fold,"newpool"),"r"))
+        pref=pickle.load(open(os.path.join(backup_fold,"pref"),"r"))
+        tasks=pickle.load(open(os.path.join(backup_fold,"tasks"),"r"))
+        try:
+            epsilons.tolist().index(epsilon) #get the index of the recovered epsilon and do only the remainingon
+        except:
+            print("problem while restarting your analysis: epsilon is not in our list of epsilons")
+            exit(-1)
+        
 
     for epsilon in epsilons:
         if(epsilon>1):
@@ -352,13 +375,17 @@ if __name__ == '__main__' :
                     writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
-            pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
-            pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
-            pickle.dump(oldpool,open(os.path.join(backup_fold,"oldpool"),"w"))
-            pickle.dump(epsilon,open(os.path.join(backup_fold,"epsilon"),"w"))
-            pickle.dump(newpool,open(os.path.join(backup_fold,"newpool"),"w"))
-            pickle.dump(pref,open(os.path.join(backup_fold,"pref"),"w"))
-            pickle.dump(tasks,open(os.path.join(backup_fold,"tasks"),"w"))
+            if(checkTime(start_time,ttime*60,30)):
+                    print(backup_fold)
+                    pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
+                    pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
+                    pickle.dump(oldpool,open(os.path.join(backup_fold,"oldpool"),"w"))
+                    pickle.dump(epsilon,open(os.path.join(backup_fold,"epsilon"),"w"))
+                    pickle.dump(newpool,open(os.path.join(backup_fold,"newpool"),"w"))
+                    pickle.dump(pref,open(os.path.join(backup_fold,"pref"),"w"))
+                    pickle.dump(tasks,open(os.path.join(backup_fold,"tasks"),"w"))
+                    print("shutdown hasta luego")
+
         #print(tmp_pdict)
 
         writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
