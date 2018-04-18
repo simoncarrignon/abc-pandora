@@ -6,6 +6,7 @@ import numpy as np
 import logging
 import time
 import subprocess
+import pickle
 from scipy import stats
 from sampler import TophatPrior
 from sampler import weighted_cov
@@ -175,8 +176,15 @@ if __name__ == '__main__' :
     numParticule=int(sys.argv[1]) #This is the total number of  particule (aka Thetas, aka set of parameter) that we want
     numproc=int(sys.argv[2]) #this is the number of parallele task we will try
     numproc_node=int(sys.argv[3]) #this is the number of parallele task we will try
-    #epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)#changing the last argument for the time asked for subjobs (temporary, shoudl be computed given cstep and nstep)
-    stime=float(sys.argv[4])  #changing the last argument for the time asked for subjobs (temporary, shoudl be computed given cstep and nstep)
+    #epsilon=float(sys.argv[4])  #the maximum score we accept (o minimum)#changing the last argument for the time asked for subjobs (temporary, should be computed given cstep and nstep)
+    stime=float(sys.argv[4])  #changing the last argument for the time asked for subjobs (temporary, should be computed given cstep and nstep)
+    if (not os.path.isdir("backup")): os.mkdir("backup")
+    backup_fold=os.path.join("backup",str(sys.argv[5]))  #folder for bac
+    backup=True
+    if (not os.path.isdir(backup_fold)): 
+        os.mkdir(backup_fold)
+        backup=False
+
     orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
@@ -196,7 +204,7 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
-    priors = TophatPrior([0,0,0,0,50,2],[1,10,1,10,1000,50])
+    priors = TophatPrior([0,0,0,0,50,2],[1,10,1,10,500,10])
     tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
     firstWeight = np.ones(numParticule) / numParticule
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
@@ -329,7 +337,7 @@ if __name__ == '__main__' :
             #we regenerate a `numproc` number of experiments with paramter drawn from the original pool
             #this may be source of pb to check
             #if(len(pdict) < numParticule and dead == len(tasks)): 
-            logging.debug("lenpdict:"+str(len(pdict))+" len tmp_dict:"+str(len(tmp_pdict))+" len tasks:"+ str(len(tasks))+" dead:"+str(dead))
+            logging.debug("lenpdict:"+str(len(pdict))+" len tmp_pdict:"+str(len(tmp_pdict))+" len tasks:"+ str(len(tasks))+" dead:"+str(dead))
             if((len(pdict) < numParticule and len(tmp_pdict) <= 0) or (len(pdict) < numParticule and len(tasks) == dead)): 
                 if(len(tmp_pdict)>0):
                     for i in tmp_pdict:
@@ -341,6 +349,15 @@ if __name__ == '__main__' :
                     writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
+            pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
+            pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
+            pickle.dump(oldpool,open(os.path.join(backup_fold,"oldpool"),"w"))
+            pickle.dump(epsilon,open(os.path.join(backup_fold,"epsilon"),"w"))
+            pickle.dump(newpool,open(os.path.join(backup_fold,"newpool"),"w"))
+            pickle.dump(pref,open(os.path.join(backup_fold,"pref"),"w"))
+            pickle.dump(tasks,open(os.path.join(backup_fold,"tasks"),"w"))
+        #print(tmp_pdict)
+
         writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
         logging.info('send cancel signal to remaining tasks')
         if(isNeedLauncher):
