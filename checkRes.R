@@ -288,6 +288,11 @@ exploreZscore <- function(){
 	plotAllDensities(ll)
 	plotcov(ll,"cstep","nstep")
 
+	ll=getlistParticlesFromPath("both/")
+    oneEps=ll[[6]]
+	plotAllDensities(ll)
+	plotcov(ll,"cstep","nstep")
+
 	ll=getlistParticlesFromPath("citiespl/")
 	plotAllDensities(ll)
 	sapply(ll,function(i)i[i$score == min(i$score),])
@@ -335,11 +340,9 @@ exploreZscore <- function(){
 
 	#load("datalist")
 
-	absdif=list()
-	multiexp=list()
 
-
-	plotAllDensities(getlistParticlesFromPath("newscore/"))
+    dev.new()
+	plotAllDensities(getlistParticlesFromPath("both/"))
 	nsall=getlistParticlesFromPath("newscore/")
 	u=nsall[["0.1057"]]
 
@@ -350,6 +353,10 @@ exploreZscore <- function(){
 	datalist=datalist[sample.int(length(datalist),500,replace=F)]
 
 	print("done datalist===")
+
+	absdif=list()
+	multiexp=list()
+
 
 	multiexp[["count"]]=sapply(datalist,function(eij){print(".");sapply(years,function(y){tryCatch(zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]]),error=function(err){NA})})})
 	print("done count ===")
@@ -428,7 +435,6 @@ test=getAllScores(datalist[1:4],years,diff=absdiff,pattern=realdatadistributions
 
 	sapply(datalist,function(u)length(unique(u[["data"]]$timeStep)))
 
-	microbenchmark(sapply(datalist[1],function(eij)sapply(years,function(y){zscore(t(agentWith(eij$data,breaks=y,numsite=40,type="count")),realdatadistributions[[as.character(y)]])})),time=1)
 
 	plot(1,1,ylim=range(multiexp$div,na.rm=T),xlim=c(0,21),ylab="score",xlab="#periods")  
 	apply(multiexp$div,2,lines,lwd=.1) 
@@ -682,6 +688,34 @@ beste=cbind(enscore$absdiff$nonprop$dis[rowe,cole],$count[rowe,cole])
 getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:5],collapse=".")
 getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[6]
 plotFromSel(list(year=50,fold=getbest(enscore$absdiff$nonprop$dis)),pattern="dis")
+
+pdf("allbest.pdf")
+par(mfrow=c(4,4))
+    dev.off()
+lapply(enscore,function(diff)lapply(diff,function(prop)lapply(prop,function(pat)(plotSiteWithGood(agentWith(read.csv(file.path(getbest(pat),"agents.csv"),sep=";"),numsite=200,numperiods=50,pattern=pat,proportion = prop))))))
+
+    pdf("allbest.pdf")
+par(mfrow=c(1,1))
+
+write.csv(listfolder(enscore),file="allcsvbis.csv",row.names=F,col.names=F)
+write.csv(paste0(listfolder(dafuk),"/agents.csv"),file="allcsvbis.csv",row.names=F,col.names=F,quote=F)
+##to be actualized using:rsync -avzR --files-from=allcsvbis.csv dlmn:/ exter/ 
+
+ dfk=getboth(enscore)
+dfkB=getboth(enscore)
+dfkB=getboth(enscore)
+printAllBest(dfk)
+
+
+
+
+printbest(enscore,"enriscore", "prop","dis")
+dafuk$absdiff$prop$both[paste0(getbest(enscore$absdiff$prop$dis),".50")]-(1/2*enscore$absdiff$prop$dis[paste0(getbest(enscore$absdiff$prop$dis),".50")]+1/2*enscore$absdiff$prop$div[paste0(getbest(enscore$absdiff$prop$dis),".50")])
+
+
+getbest(dafuk$absdiff$prop$both)
+printbest(dafuk,"zscore","prop","both")
+
 getbest(enscore$absdiff$prop$dis)
 getbest(enscore$absdiff$nonprop$dis)
 getbest(enscore$enriscore$prop$dis)
@@ -702,8 +736,10 @@ plotSiteWithGood(agentWith(read.csv("enscore_zscore_prop_div",sep=";"),numsite=2
 plotSiteWithGood(agentWith(read.csv("enscore_absdiff_prop_div",sep=";"),numsite=200,numperiods=50,pattern="div"))
 plotSiteWithGood(getRealDataCount(numperiods=50,pattern="div"))
 
-getbest(enscore$zscore$prop$div)
-getbest(enscore$absdiff$prop$div)
+agentWith(read.csv(file.path("exter/",getbest(enscore$zscore$prop$div)),sep=";"),numsite=200,numperiods=50,pattern="dis")
+
+
+	  getbest(enscore$absdiff$prop$div)
 par(mfrow=c(1,3))
 plotSiteWithGood(agentWith(read.csv("enscore_zscore_prop_dis",sep=";"),numsite=200,numperiods=50,pattern="dis"))
 plotSiteWithGood(agentWith(read.csv("enscore_absdiff_prop_dis",sep=";"),numsite=200,numperiods=50,pattern="dis"))
@@ -726,3 +762,60 @@ plot(enscore$zscore$prop$div ~ enscore$enriscore$prop$div )
 }
 
 
+test500AGBOTHPATTERNS <- function(){
+    load("bothscores.Rout")
+    enscore$enriscore$prop$allgoods$both=enscore$enriscore$prop$allgoods$dis*.5 + enscore$enriscore$prop$allgoods$div*.5
+    enscore$enriscore$prop$noits$both=enscore$enriscore$prop$noits$dis*.5 + enscore$enriscore$prop$noits$div*.5
+
+
+write.csv(paste0(getbestb(enscore$enriscore$prop$allgood$both,10),"/agents.csv"),"rand_all_csvbis.csv",row.names=F,col.names=F,quote=F)
+##to be actualized using:rsync -avzR --files-from=allcsvbis.csv dlmn:/ exter/ 
+
+#best_score=enscore
+#rand_score=enscore
+#elected=getbest(enscore$enriscore$prop$allgood$both)
+
+    res=72
+    fact=1.5
+    ptsize=10
+png("bestSimu_for_bestselection.png",type="cairo-png",width=480*fact,height=480*fact,pointsize=ptsize*fact,res=res)
+elected=getbest(best_score$enriscore$prop$noits$both)
+par.def=par()
+par(mfrow=c(2,2))
+ sapply(c("dis","div"),function(pat){plotSiteWithGood(agentWith(read.csv(file.path("exter/",elected,"agents.csv"),sep=";"),numsite=400,numperiods=50,pattern=pat,proportion =  T),main="simu",ylim=c(0,1.1),ylab="% of site with",xlab="periods");plotSiteWithGood(getRealDataCount(numperiods=50,pattern=pat,proportion =  T),ylim=c(0,1.1),ylab="% of site with",xlab="periods",main="data")})
+par(par.def)
+dev.off()
+
+png("bestSimu_for_randselection.png",type="cairo-png",width=480*fact,height=480*fact,pointsize=ptsize*fact,res=res)
+elected=getbest(rand_score$enriscore$prop$noits$both)
+par.def=par()
+par(mfrow=c(2,2))
+ sapply(c("dis","div"),function(pat){plotSiteWithGood(agentWith(read.csv(file.path("exter/",elected,"agents.csv"),sep=";"),numsite=400,numperiods=50,pattern=pat,proportion =  T),main="simu",ylim=c(0,1.1),ylab="% of site with",xlab="periods");plotSiteWithGood(getRealDataCount(numperiods=50,pattern=pat,proportion =  T),ylim=c(0,1.1),ylab="% of site with",xlab="periods",main="data")})
+par(par.def)
+dev.off()
+
+
+    res=72
+    fact=3
+    ptsize=10
+    png("result_all_epsilons_rand.png",type="cairo-png",width=480*fact,height=480*fact,pointsize=ptsize*fact,res=res)
+    plotAllDensities(getlistParticlesFromPath("both500rand//"))
+    dev.off()
+
+    png("result_all_epsilons_best.png",type="cairo-png",width=480*fact,height=480*fact,pointsize=ptsize*fact,res=res)
+    plotAllDensities(getlistParticlesFromPath("both500/"))
+    dev.off()
+
+    png("best_allgood_vs_noits.png",type="cairo-png",width=480*fact,height=480*fact,pointsize=ptsize*fact,res=res)
+    plot(best_score$enriscore$prop$allgoods$both ~ best_score$enriscore$prop$noits$both,bg=alpha("red",.5),pch=21,ylab="score Without ITS",xlab="score with all good",main="impact of removing ITS")
+    points(rand_score$enriscore$prop$allgoods$both ~ rand_score$enriscore$prop$noits$both,bg=alpha("green",.5),pch=21,ylab="score Without ITS",xlab="score with all good",main="impact of removing ITS")
+    legend("topleft" ,pch=21,fill=c(alpha("red",.5),alpha("green",.5)),legend=c("selection biased toward the best" ,"random selection"))
+    dev.off()
+
+
+    png("result_all_epsilons_best.png",type="cairo-png",width=480*fact,height=480*fact,pointsize=ptsize*fact,res=res)
+    plotAllDensities(getlistParticlesFromPath("both500/"))
+    dev.off()
+
+
+}
