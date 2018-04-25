@@ -97,6 +97,7 @@ class Experiment:
             ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
 
             soup["numAgents"]['value']=str(self.nagents)
+            soup["culture"]['transmission']="copymax"
             soup["culture"]['step']=str(int(self.params[indices['cstep']]))
             soup["culture"]['mutation']=str(self.params[indices['mu']])
             soup["culture"]['mumax']=str(self.params[indices['mumax']])
