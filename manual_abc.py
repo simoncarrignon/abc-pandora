@@ -213,17 +213,19 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
-    priors = TophatPrior([0,0,0,0,50,2],[1,10,1,10,500,10])
-    tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
-    firstWeight = np.ones(numParticule) / numParticule
-    oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
-    oldpool["ws"]=firstWeight
-    oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
+    priors = TophatPrior([0,0,0,0,50,2],[1,10,1,10,1000,50])
+    if(not backup):
+        tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
+        firstWeight = np.ones(numParticule) / numParticule
+        oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
+        oldpool["ws"]=firstWeight
+        oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
+
 
     isNeedLauncher=True
     
     if(backup):
-        print("backup old analysis ")
+        logging.debug("backup old analysis ")
         tmp_pdict=pickle.load(open(os.path.join(backup_fold,"tmp_pdict"),"r"))
         pdict=pickle.load(open(os.path.join(backup_fold,"pdict"),"r"))
         oldpool=pickle.load(open(os.path.join(backup_fold,"oldpool"),"r"))
@@ -231,8 +233,11 @@ if __name__ == '__main__' :
         newpool=pickle.load(open(os.path.join(backup_fold,"newpool"),"r"))
         pref=pickle.load(open(os.path.join(backup_fold,"pref"),"r"))
         tasks=pickle.load(open(os.path.join(backup_fold,"tasks"),"r"))
+        logging.debug("backuped sizes: \n tmp_pdict:%d, pdict:%d, oldpool:%d, newpool:%d,tasks:%d" % (len(tmp_pdict),len(pdict),len(oldpool),len(newpool),len(tasks))  )
+        logging.debug("epsilon: %d " % epsilon)
+
         try:
-            epsilons.tolist().index(epsilon) #get the index of the recovered epsilon and do only the remainingon
+            epsilons=epsilons[epsilons.tolist().index(epsilon):] #get the index of the recovered epsilon and do only the remainingon
         except:
             print("problem while restarting your analysis: epsilon is not in our list of epsilons")
             exit(-1)
@@ -245,6 +250,8 @@ if __name__ == '__main__' :
             round_epsilon=np.round(epsilon,decimals=4)
 
         pref="eps_"+str(round_epsilon) #this prefix is mainly use to store the data
+        logging.debug("restarting with eps: %f " % epsilon)
+        logging.debug("restarting with pref: %s " % pref)
 
         tmpres="tmp_res"+str(round_epsilon)+".csv"
         if(not (os.path.isfile(tmpres))):
@@ -253,7 +260,7 @@ if __name__ == '__main__' :
                 tmp_out.close()
 
         ###initialize pool
-        if( isNeedLauncher):
+        if( isNeedLauncher and not backup):
             writeNupdate(tmp_pdict)
 
         ##findFileneNameAndUpdateCounter
@@ -376,8 +383,8 @@ if __name__ == '__main__' :
                     writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
-            if(checkTime(start_time,ttime*60,30)):
-                    print(backup_fold)
+            if(checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) ):
+                    logging.info("log backup")
                     pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
                     pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
                     pickle.dump(oldpool,open(os.path.join(backup_fold,"oldpool"),"w"))
@@ -385,7 +392,10 @@ if __name__ == '__main__' :
                     pickle.dump(newpool,open(os.path.join(backup_fold,"newpool"),"w"))
                     pickle.dump(pref,open(os.path.join(backup_fold,"pref"),"w"))
                     pickle.dump(tasks,open(os.path.join(backup_fold,"tasks"),"w"))
-                    print("shutdown hasta luego")
+                    if(checkTime(start_time,ttime*60,30)):
+                        logging.info("safe shutdown")
+                        print("shutdown hasta luego")
+                        exit(0)
 
         #print(tmp_pdict)
 
