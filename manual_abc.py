@@ -14,6 +14,7 @@ from ceecexp import Experiment
 from ceecexp import order
 
 
+#return true if the application reach a limit too close to a total time ttime
 def checkTime(start_time,ttime,limit):
     return(ttime - (time.time()-start_time) < limit) 
 
