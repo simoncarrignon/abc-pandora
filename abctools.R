@@ -427,3 +427,31 @@ names(thetas)=c("nstep","cstep","mu","mumax","copy","strb")
 return(thetas)
 }
 
+plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
+
+    denseP=NULL
+    denseA=NULL
+    denseB=NULL
+    if(is.null(from))from=min(A,B,prior)
+    if(is.null(to))to=max(A,B,prior)
+    if(!is.null(A))denseA=density(A,from=from,to=to)
+    if(!is.null(B))denseB=density(B,from=from,to=to)
+    if(length(prior)==2)denseP=density(runif(5000,prior[1],prior[2]),from=from,to=to)
+    else if(!is.null(prior))denseP=density(prior,from=from,to=to)
+    print("donde")
+
+    cols=c(alpha("red",.8),alpha("blue",.8),alpha("yellow",.8))
+    names(cols)=c("P","A","B")
+    rangex=range(denseB$x,denseA$x,denseP$x)
+    rangey=range(denseB$y,denseA$y,denseP$y)
+    plot(denseA,ylim=rangey,xlim=rangex,type="n",...)
+    if(!is.null(prior))
+        polygon(c(from,denseP$x,to),c(0,denseP$y,0),col=cols["P"],lwd=2)
+    if(!is.null(A))
+        polygon(c(from,denseA$x,to),c(0,denseA$y,0),col=cols["A"],lwd=2)
+    if(!is.null(B))
+        polygon(c(from,denseB$x,to),c(0,denseB$y,0),col=cols["B"],lwd=2)
+
+
+}
+
