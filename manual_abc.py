@@ -9,9 +9,7 @@ import subprocess
 from scipy import stats
 from sampler import TophatPrior
 from sampler import weighted_cov
-from simpleMod  import Experiment
-from simpleMod  import genData
-from simpleMod  import order
+from apemccExp  import Experiment
 
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
@@ -167,8 +165,8 @@ def writeParticules(particules,epsi,outfilename):
 
 
 if __name__ == '__main__' :
-    Y=genData()
-    print(Y)
+
+    #print(Y)
     pdict={}     #list of score for each exp
     newpool={}     #list of score for each exp
     countExpKind={} #number of experiment for each different "kind" 
