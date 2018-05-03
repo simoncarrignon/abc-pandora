@@ -1,6 +1,7 @@
 import os,time,sys,logging
 import numpy as np
 from apemcc import CCSimu
+from apemcc import realmeans
 
 ##wraper clas of CCSimu to be called by the ABC
 
@@ -27,9 +28,10 @@ class Experiment:
         self.data=data
         self.kind=str("a")
         self.consistence=False
-        self.ccsimu = CCSimu()
+        self.ccsimu = CCSimu(5,int(params[0]),self.expId,-1,params[1],params[2],params[3],"file")
+    #def __init__(self,n_ws,max_time,pref,model,p_mu,p_copy,b_dist,init):
         ##here check the parameters but also 
-        if(params[1] <= 0.0 or params[0] <= 0.0):
+        if(params[1] <= 0.0 or params[0] <= 0.0 or params[2] < 0.0 or params[3] > 1.0 or params[3] < -1.0):
             self.consistence=False
         else:
             self.consistence=True
@@ -58,21 +60,10 @@ class Experiment:
     #generate a string that countain the command that should be run on marenostrum
     #or directly run the task if the model is to be called directl
     def generateTask(self):
-        means=[]
-        stds=[]
-        pop=20
-        sd=self.params[1]
-        mean=self.params[0]
-        fact=self.params[2]
-        for time in range(20):
-            dist=np.random.normal(mean,sd,int(pop))
-            means.append(dist.mean())
-            stds.append(dist.std())
-            pop=pop+fact*pop
-            if(pop<1):pop=1
-        return(np.asarray((np.asarray(means),np.asarray(stds))))
-
-        
+        self.ccsimu.run()       
+        for w in self.ccsimu.world:
+            print(w.id)
+            print(realmeans[w.id])
     #remove the entire folder of the particul
     def remove(self):
         logging.info("useless"+str(self)+",score:"+str(self.score))
