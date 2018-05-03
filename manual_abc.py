@@ -10,6 +10,7 @@ from scipy import stats
 from sampler import TophatPrior
 from sampler import weighted_cov
 from apemccExp  import Experiment
+from apemccExp  import order
 
 
 #generate a pool of a numer of `N` experiments that will be stored in the folder `pref`
@@ -186,8 +187,8 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
-    numeps=5
-    maxeps=0.05
+    numeps=10
+    maxeps=5
     mineps=0.001
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
@@ -198,7 +199,7 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
-    priors = TophatPrior([0,0,0,50,2],[1,10,10,1000,50])
+    priors = TophatPrior([1,0,0,-1],[10000,1,1,1])
     tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
     firstWeight = np.ones(numParticule) / numParticule
     oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
