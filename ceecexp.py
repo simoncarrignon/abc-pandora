@@ -7,10 +7,11 @@ import subprocess
 indices= {  "mu"            : 0, 
             "mumax"        : 1,
             "copy"        : 2,
-            "nstep"        : 3,
-            "cstep"         : 4}
+            "strb"        : 3,
+            "nstep"        : 4,
+            "cstep"         : 5}
 sep=","
-order = 'nstep'+sep+'cstep'+sep+'mu'+sep+'mumax'+sep+'copy'
+order = 'nstep'+sep+'cstep'+sep+'mu'+sep+'mumax'+sep+'copy'+sep+'strb'
 
 
 ###XL PARSER TOOL##########
@@ -60,14 +61,15 @@ class Experiment:
 
         self.consistence=True
         self.params = params
-        self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']]),str(self.params[indices['mumax']]),str(self.params[indices['copy']])])
+        self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']]),str(self.params[indices['mumax']]),str(self.params[indices['copy']]),str(self.params[indices['strb']])])
         self.binpath=binpath #binpath is the path where the executable & generic config ifle are stored 
         self.outpath=outpath
         self.score=-1
 
-        self.numperiods=10
-        self.pattern="dis" 
-        self.numsite=200
+        self.numperiods=50
+        self.pattern="both" 
+        self.numsite=450
+        self.nagents=500
         self.diffstr="enriscore" 
 
         if((int(self.params[indices['cstep']]) < 1 ) or  #No experiments if no cultural step
@@ -75,6 +77,8 @@ class Experiment:
            #(int(self.params[indices['ngoods']]) < 2 ) or #No exchange possible if we don't have at least 2 goods
            (self.params[indices['mumax']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['copy']] <= 0 ) or #No meaning if mutation rate <0 or >1
+           (self.params[indices['copy']] > 1 ) or #No meaning if mutation rate <0 or >1
+           (self.params[indices['strb']] < 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['nstep']]/(self.params[indices['cstep']]) < self.numperiods ) or #not enough cultural step to extract meaningful information
            (self.params[indices['mu']] <= 0 ) or #No meaning if mutation rate <0 or >1
            (self.params[indices['mu']] > 1 ) #or 
@@ -92,11 +96,13 @@ class Experiment:
             ##TODO .updateConfig()
             ##change the different value in the XML file with the parameters (thetas) of this experiments (particle)
 
-            soup["numAgents"]['value']=str(250)
+            soup["numAgents"]['value']=str(self.nagents)
+            soup["culture"]['transmission']="copymax"
             soup["culture"]['step']=str(int(self.params[indices['cstep']]))
             soup["culture"]['mutation']=str(self.params[indices['mu']])
             soup["culture"]['mumax']=str(self.params[indices['mumax']])
             soup["culture"]['copy']=str(self.params[indices['copy']])
+            soup["culture"]['strength']=str(self.params[indices['strb']])
             soup["numSteps"]['value']=str(int(self.params[indices['nstep']])*3)
             soup["numSteps"]['serializeResolution']=str(3*int(self.params[indices['cstep']]))
             #soup["events"]['rate']=str(int(self.params[indices['nstep']])/(4*int(self.params[indices['cstep']]) ))
