@@ -7,7 +7,7 @@ from apemcc import realmeans
 
 sep=","
 
-order = 'mu'+sep+'sd'+sep+'frac'
+order = 'max_time'+sep+'mu'+sep+'copy'+sep+'alpha'
 
 ##Check consistency of paramter
 ##generate the folders and files for the xp
@@ -20,21 +20,23 @@ class Experiment:
     :param outpath: path where will be stored expe config and outputfiles
     """
     
-    def __init__(self, params,data):
+    def __init__(self, params,pref):
         self.consistence=True
         self.params = params
         self.expId = "_".join(map(str,params))
         self.score=-1
-        self.data=data
+        self.particleDirectory=os.path.join(str(pref),self.expId)
         self.kind=str("a")
         self.consistence=False
-        self.ccsimu = CCSimu(5,int(params[0]),self.expId,-1,params[1],params[2],params[3],"file")
     #def __init__(self,n_ws,max_time,pref,model,p_mu,p_copy,b_dist,init):
         ##here check the parameters but also 
         if(params[1] <= 0.0 or params[0] <= 0.0 or params[2] < 0.0 or params[3] > 1.0 or params[3] < -1.0):
             self.consistence=False
         else:
             self.consistence=True
+        if (not os.path.isdir(pref)) and self.consistence:
+            os.mkdir(pref)
+        self.ccsimu = CCSimu(5,int(params[0]),self.particleDirectory,-1,params[1],params[2],params[3],"file")
 
     def getKind(self):
         return(self.kind)
@@ -44,11 +46,16 @@ class Experiment:
 
     #check if the score exist and return it, fi not return -1
     def gatherScore(self):
-        return(self.generateTask())
+        self.ccsimu.run()
+        return(self.getScore())
 
     #check if the score exist and return it, fi not return -1
     def getScore(self):
-        self.ccsimu.score()
+        allmeans=[]
+        for ws in self.ccsimu.world:
+            tmean=np.mean(ws.production["exterior_diam"])
+            allmeans.append(tmean-realmeans[ws.id])
+        self.score=np.mean(allmeans)
         return(self.score)
 
     def __str__(self):
