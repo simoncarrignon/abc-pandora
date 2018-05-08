@@ -187,7 +187,7 @@ if __name__ == '__main__' :
     start_time=time.time()
 
     if (not os.path.isdir("backup")): os.mkdir("backup")
-    backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for bac
+    backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for backup
     backup=True
     if (not os.path.isdir(backup_fold)): 
         os.mkdir(backup_fold)
@@ -202,8 +202,8 @@ if __name__ == '__main__' :
         print('not a slurm job')
 
     numeps=10
-    maxeps=5
-    mineps=0.001
+    maxeps=2
+    mineps=0.05
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     epsilons=np.append(1000,epsilons) #first round = prior check
@@ -221,7 +221,7 @@ if __name__ == '__main__' :
         oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
 
 
-    isNeedLauncher=True
+    isNeedLauncher=False
     
     if(backup):
         logging.debug("backup old analysis ")
@@ -382,7 +382,7 @@ if __name__ == '__main__' :
                     writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
-            if(checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) ):
+            if(backup and (checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) )):
                     logging.info("log backup")
                     pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
                     pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
