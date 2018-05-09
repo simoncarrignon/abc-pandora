@@ -323,21 +323,21 @@ plotDensities <- function(table,param,epsilon,...){
 	names(htcolF)[length(htcolF)]="prior"
 	listParticles=table[2:length(table)]
 	names(listParticles)=epsilon
-	densities=lapply(listParticles,function(i){density(i[,param],from=0)})#,from=from,to=to)})
+	densities=lapply(listParticles,function(i){density(i[,param],from=from,to=to)})#,from=from,to=to)})
 	densitiesPrio=density(prior,from=from,to=to)
 	names(densities)=epsilon
 	rangex=range(lapply(densities,function(i)range(i$x)),densitiesPrio$x)
 	rangey=range(lapply(densities,function(i)range(i$y)),densitiesPrio$y*1.1)
 	par(mar=c(5,5,1,1))
-	plot(density(listParticles[[1]][,param]),ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
+	plot(density(listParticles[[1]][,param]),ylim=c(0,max(rangey)),xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
 	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),col=htcolF[length(htcolF)],lwd=2)
 	lapply(seq_along(densities),function(i){
-	       polygon(c(rangex[1],densities[[i]]$x,0),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
+	       polygon(c(from,densities[[i]]$x,to),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
 	       #	   abline(v=mean(densities[[i]]$x),col=htcol[names(densities)[i]])
 	       #	   text(mean(densities[[i]]$x),0,names(densities)[i],col=htcol[names(densities)[i]])
 })
 	text(from,max(densitiesPrio$y)+.05*max(densitiesPrio$y),substitute(prior:param %~% italic(u)(from,to),list(param=param,from=round(from),to=round(to))),cex=.8)
-	legend("topright",legend=names(htcolF),fill=htcolF,title=expression(epsilon),inset=.05,title.cex=1.8)
+	legend("topright",legend=c(as.character(round(as.numeric(epsilon),digits = 3)),"prior"),fill=htcolF,title=expression(epsilon),inset=.05,title.cex=1.8)
 }
 
 plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
@@ -380,7 +380,7 @@ getlistParticlesFromPath <- function(path){
 	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
 	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
 	names(listParticles)=epsilon
-	listParticles=lapply(listParticles,function(u) {u$ee_peryear = u$nstep/500;u$CulturalEvents = u$nstep/u$cstep; u$ce_peryear = u$CulturalEvents/500;return(u)})#u$ratio = (u$cstep)/u$nstep; u$ee_perce = (u$nstep)/u$CulturalEvents;
+	#listParticles=lapply(listParticles,function(u) {u$ee_peryear = u$nstep/500;u$CulturalEvents = u$nstep/u$cstep; u$ce_peryear = u$CulturalEvents/500;return(u)})#u$ratio = (u$cstep)/u$nstep; u$ee_perce = (u$nstep)/u$CulturalEvents;
 	return(listParticles)
 }
 
@@ -425,5 +425,33 @@ fold2thetas <- function(foldname){
 thetas=	as.numeric(unlist(strsplit(basename(foldname),"_")))
 names(thetas)=c("nstep","cstep","mu","mumax","copy","strb")
 return(thetas)
+}
+
+plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
+
+    denseP=NULL
+    denseA=NULL
+    denseB=NULL
+    if(is.null(from))from=min(A,B,prior)
+    if(is.null(to))to=max(A,B,prior)
+    if(!is.null(A))denseA=density(A,from=from,to=to)
+    if(!is.null(B))denseB=density(B,from=from,to=to)
+    if(length(prior)==2)denseP=density(runif(5000,prior[1],prior[2]),from=from,to=to)
+    else if(!is.null(prior))denseP=density(prior,from=from,to=to)
+    print("donde")
+
+    cols=c(alpha("red",.8),alpha("blue",.8),alpha("yellow",.8))
+    names(cols)=c("P","A","B")
+    rangex=range(denseB$x,denseA$x,denseP$x)
+    rangey=range(denseB$y,denseA$y,denseP$y)
+    plot(denseA,ylim=rangey,xlim=rangex,type="n",...)
+    if(!is.null(prior))
+        polygon(c(from,denseP$x,to),c(0,denseP$y,0),col=cols["P"],lwd=2)
+    if(!is.null(A))
+        polygon(c(from,denseA$x,to),c(0,denseA$y,0),col=cols["A"],lwd=2)
+    if(!is.null(B))
+        polygon(c(from,denseB$x,to),c(0,denseB$y,0),col=cols["B"],lwd=2)
+
+
 }
 
