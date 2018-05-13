@@ -189,7 +189,7 @@ class Experiment:
         rargs=" ".join([self.particleDirectory,str(self.numperiods),str(self.diffstr), str(self.pattern),str(self.numsite)])
         if(os.getenv('BSC_MACHINE') == 'mn4'):
             bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R '
-        if(os.getenv('BSC_MACHINE') == 'nord3'):
+        elif(os.getenv('BSC_MACHINE') == 'nord3'):
             bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R '
         else:
             bashCommand += 'Rscript --vanilla computeScore.R'
