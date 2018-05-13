@@ -208,7 +208,8 @@ if __name__ == '__main__' :
         params=alltotest[idx]
         params=params[0:(len(params)-2)]
         one=Experiment(params,"rerun",rerun=1)
-        print(one.generateTask())
+        with open("rerun.task",'a') as tskf:
+            tskf.write(one.generateTask())
 
         #if(epsilon>1):
         #    round_epsilon=np.round(epsilon)
