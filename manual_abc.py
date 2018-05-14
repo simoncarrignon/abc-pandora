@@ -426,7 +426,7 @@ if __name__ == '__main__' :
             theta=exp.params
             kernel = stats.multivariate_normal(theta, sigma, allow_singular=True).pdf
             new_raw["ws"].append(priors(theta) / np.sum(oldpool["ws"] * kernel(oldpool["thetas"])) )
-        new_raw["ws"]=np.asarray(new_raw["ws"])
+        new_raw["ws"]=np.asarray(new_raw["ws"]/np.sum(new_raw["ws"]))
         #new_raw["ws"]=np.ones(len(oldpool["thetas"])) / len(oldpool["thetas"])
         
         oldpool=new_raw
