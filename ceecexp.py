@@ -10,6 +10,7 @@ indices= {  "mu"            : 0,
             "strb"        : 3,
             "nstep"        : 4,
             "cstep"         : 5}
+
 sep=","
 order = 'nstep'+sep+'cstep'+sep+'mu'+sep+'mumax'+sep+'copy'+sep+'strb'
 
@@ -52,13 +53,20 @@ class Experiment:
     :param outpath: path where will be stored expe config and outputfiles
     """
     
-    def __init__(self, params,outpath, prefId=""):
+    def __init__(self, params,outpath, prefId="",rerun=0):
         binpath=""
         if(os.getenv('BSC_MACHINE')):
             binpath="/home/bsc21/bsc21394/ceeculture/"
         else:
             binpath="/home/scarrign/ceeculture/"
 
+        if(rerun):
+            indices= {  "mu"            : 2, 
+                        "mumax"        : 3,
+                        "copy"        : 4,
+                        "strb"        : 5,
+                        "nstep"        : 0,
+                        "cstep"         : 1}
         self.consistence=True
         self.params = params
         self.expId = "_".join([str(int(self.params[indices['nstep']])),str(int(self.params[indices['cstep']])),str(self.params[indices['mu']]),str(self.params[indices['mumax']]),str(self.params[indices['copy']]),str(self.params[indices['strb']])])
@@ -111,6 +119,14 @@ class Experiment:
             #TODO .createFolder()
             #create a directory to run experiment associated to this particle
             self.particleDirectory=os.path.join(self.outpath,self.expId)
+            #when rerunning the final results, we want to have mutlitple time the same particule tested so we generate new directory for each one og them
+            if(rerun):
+                suf=1
+                tmpparticleDirectory = self.particleDirectory+"_"+str(suf)
+                while(os.path.isdir(tmpparticleDirectory)):  
+                    suf+=1
+                    tmpparticleDirectory = self.particleDirectory+"_"+str(suf)
+                self.particleDirectory=tmpparticleDirectory
             
 
             #print("config_"+str(self.expId)+".xml")
@@ -173,7 +189,7 @@ class Experiment:
         rargs=" ".join([self.particleDirectory,str(self.numperiods),str(self.diffstr), str(self.pattern),str(self.numsite)])
         if(os.getenv('BSC_MACHINE') == 'mn4'):
             bashCommand += '/apps/R/3.4.0/bin/Rscript --vanilla computeScore.R '
-        if(os.getenv('BSC_MACHINE') == 'nord3'):
+        elif(os.getenv('BSC_MACHINE') == 'nord3'):
             bashCommand += '/apps/R/3.2.2/bin/Rscript --vanilla computeScore.R '
         else:
             bashCommand += 'Rscript --vanilla computeScore.R'
