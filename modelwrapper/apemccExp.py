@@ -1,16 +1,15 @@
 import os,time,sys,logging
-
-sys.path.insert(0, '../apemcc/')
-
 import numpy as np
-from apemcc.model.apemcc import CCSimu
+import random
 from apemcc.data.ceramic import *
+from apemcc.model.apemcc import CCSimu
+
 
 ##wraper clas of CCSimu to be called by the ABC
 
 sep=","
 
-order = 'max_time'+sep+'mu'+sep+'copy'+sep+'alpha'
+order = 'max_time'+sep+'mu'+sep+'copy'+sep+'alpha'+sep+"str1"+sep+"str2"+sep+"str3" + sep+ "str4"
 
 ##Check consistency of paramter
 ##generate the folders and files for the xp
@@ -33,12 +32,15 @@ class Experiment:
         self.consistence=False
         #CCSimu param: (self,n_ws,max_time,pref,model,p_mu,p_copy,b_dist,init)
         ##here check the parameters but also 
-        if( (params[1] < 0.0 or params[1] > 1.0) or params[0] <= 0.0 or (params[2] < 0.0 or params[2] > 1.0) or params[3] > 1.0 or params[3] < -1.0):
+        strmu=params[4:8]
+        if( (params[1] < 0.0 or params[1] > 1.0) or params[0] <= 0.0 or (params[2] < 0.0 or params[2] > 1.0) or params[3] > 1.0 or params[3] < -1.0 or (strmu < 0).any()):
             self.consistence=False
         else:
             if (not os.path.isdir(pref)):
                 os.mkdir(pref)
-            self.ccsimu = CCSimu(5,int(params[0]),self.particleDirectory,-1,params[1],params[2],params[3],"file",realdist,outputfile=False)
+            self.consistence=True
+            print(params[4:8])
+            self.ccsimu = CCSimu(5,int(params[0]),self.particleDirectory,-1,params[1],params[2],params[3],"file",realdist,outputfile=False,mu_str=strmu)
 
     def getKind(self):
         return(self.kind)
@@ -53,11 +55,21 @@ class Experiment:
 
     #check if the score exist and return it, fi not return -1
     def getScore(self):
-        allmeans=[]
+        ameans=[]
         for ws in self.ccsimu.world:
-            tmean=np.mean(ws.production["exterior_diam"])
-            allmeans.append(tmean-realmeans[ws.id])
-        self.score=np.mean(allmeans)
+            tmean=0
+            s=samplesize[ws.id]
+            tot_prod=len(ws.production[ws.all_measures.keys()[1]])
+            if(s>tot_prod):s=tot_prod
+            sel=random.sample(range(0,tot_prod), s)
+            for measure in ws.all_measures:
+                allprod=ws.production[measure]
+                selprod=[allprod[i] for i in sel]
+                tmean=np.mean(selprod)
+                diff=abs(float(tmean)-float(allmeans[ws.id][measure]))
+                ameans.append(diff)
+        self.score=np.mean(ameans)
+        print("score="+str(self.score))
         return(self.score)
 
     def __str__(self):
