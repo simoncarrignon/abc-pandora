@@ -12,7 +12,15 @@ from abctools.sampler import TophatPrior
 from abctools.sampler import weighted_cov
 from modelwrapper.apemccExp import *
 
-#return true if the application reach a limit too close to a total time ttime
+from mpi4py import MPI
+if (MPI.COMM_WORLD.size > 1):
+    mpi=1
+    global comm 
+    global rank 
+    global size 
+    comm = MPI.COMM_WORLD #get the value of the mpi cluster
+    rank = comm.rank #get the rank of the current worker
+    size = comm.size #get the total numver of workers      #return true if the application reach a limit too close to a total time ttime
 def checkTime(start_time,ttime,limit):
     return(ttime - (time.time()-start_time) < limit) 
 
@@ -349,6 +357,11 @@ if __name__ == '__main__' :
 
             ##update the pool of particule given their score if the experiment has finished
             tmp_keys=list(tmp_pdict.keys())
+            print(str(len(tmp_keys))+" total")
+            if(mpi):
+                print("node:"+str(rank)+"/"+str(size))
+                tmp_keys=array_split(alledge,size)[rank]
+                print(str(len(tmp_keys))+" for : "+str(ranl))
             for t in tmp_keys:
                 tmp_exp=tmp_pdict[t]
                 tmp_exp.gatherScore()
