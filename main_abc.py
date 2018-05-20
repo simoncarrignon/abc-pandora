@@ -8,10 +8,9 @@ import time
 import subprocess
 import pickle
 from scipy import stats
-from sampler import TophatPrior
-from sampler import weighted_cov
-from apemccExp  import Experiment
-from apemccExp  import order
+from abctools.sampler import TophatPrior
+from abctools.sampler import weighted_cov
+from modelwrapper.apemccExp import *
 
 #return true if the application reach a limit too close to a total time ttime
 def checkTime(start_time,ttime,limit):
@@ -52,8 +51,8 @@ def renewPool(N,pref,oldpool):
         sigma = oldpool["sigma"]
         params = np.random.multivariate_normal(theta, sigma)
 
-        while (params<0).any():
-            params = np.random.multivariate_normal(theta, sigma)
+        #while (params<0).any():
+        #    params = np.random.multivariate_normal(theta, sigma)
 
         one=Experiment(params,pref)
         while(not one.consistence):
@@ -61,8 +60,8 @@ def renewPool(N,pref,oldpool):
             theta = oldpool["thetas"][idx]
             sigma = oldpool["sigma"]
             params = np.random.multivariate_normal(theta, sigma)
-            while (params<0).any():
-                params = np.random.multivariate_normal(theta, sigma)
+            #while (params<0).any():
+            #    params = np.random.multivariate_normal(theta, sigma)
             one=Experiment(params,pref)
         pool_exp[one.getId()]=one
     return(pool_exp)
@@ -201,9 +200,9 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
-    numeps=10
-    maxeps=2
-    mineps=0.05
+    numeps=30
+    maxeps=3
+    mineps=1
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     epsilons=np.append(1000,epsilons) #first round = prior check
@@ -212,13 +211,15 @@ if __name__ == '__main__' :
     #open a general log file
     logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
 
-    priors = TophatPrior([1,0,0,-1],[10000,1,1,1])
+    priors = TophatPrior([1,0,0,-1,0,0,0,0],[10000,1,1,1,.1,.1,.1,.1])
     if(not backup):
         tmp_pdict=genTestPool(priors,numParticule,pref) #tmp_pdict is a dictionnary with the id of an exeriment and the full Experiment obpect 
         firstWeight = np.ones(numParticule) / numParticule
         oldpool=rawMatricesFromPool(tmp_pdict) #oldpool will store only np.array equivalent to the raw data in genTestPool
         oldpool["ws"]=firstWeight
         oldpool["sigma"]=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
+
+    print("all init done")
 
 
     isNeedLauncher=False
