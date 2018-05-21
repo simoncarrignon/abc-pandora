@@ -23,30 +23,28 @@ if (MPI.COMM_WORLD.size > 1):
 def MPIrunAndUpdate(dict_exp):
     dict_exp=comm.bcast(dict_exp,root=0) #the keys of  dictionary is send to all worker
     tmp_keys=list(dict_exp.keys())
-    logging.debug(str(len(tmp_keys))+"keys for worker "+str(comm.rank))
+    #logging.debug(str(len(tmp_keys))+"keys for worker "+str(comm.rank))
     sub_tmp_keys=np.array_split(tmp_keys,comm.size)[comm.rank]
-    logging.debug(str(len(sub_tmp_keys))+"sub keys for worker "+str(comm.rank))
+    #logging.debug(str(len(sub_tmp_keys))+"sub keys for worker "+str(comm.rank))
     dict_exp_score={}
     for t in sub_tmp_keys:
         tmp_exp=dict_exp[t]
         tmp_exp.gatherScore()
         dict_exp_score[t]=tmp_exp.score
-        logging.debug("compute score for "+t+"="+str(tmp_exp.score))
-    print("pdict len befor gather"+str(len(dict_exp))+" forworker "+str(comm.rank))
+        #logging.debug("compute score for "+t+"="+str(tmp_exp.score))
     dict_exp_score=comm.gather(dict_exp_score,root=0) #send all the local best eff to the root worker
-    print("pdict after gather worker"+str(comm.rank))
     if(comm.rank == 0):
         dict_exp_score={k: v for d in dict_exp_score for k, v in d.iteritems()}
-        logging.debug("dict_exp_score in worker0")
-        logging.debug(dict_exp_score.values())
-        logging.debug("lets re-unify with dict_exp")
+        #logging.debug("dict_exp_score in worker0")
+        #logging.debug(dict_exp_score.values())
+        #logging.debug("lets re-unify with dict_exp")
         for t in tmp_keys:
-            logging.debug("before dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
+            #logging.debug("before dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
             dict_exp[t].score=dict_exp_score[t] 
-            logging.debug("after  dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
-    print("pdict after comp worker"+str(comm.rank))
+            #logging.debug("after  dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
+    #print("pdict after comp worker"+str(comm.rank))
     dict_exp=comm.bcast(dict_exp,root=0) #the new dictionnary is send to all worker
-    logging.debug("new dict_exp of size="+str(len(dict_exp)))
+    #logging.debug("new dict_exp of size="+str(len(dict_exp)))
     return(dict_exp)
 
 
@@ -251,7 +249,11 @@ if __name__ == '__main__' :
     if(not mpi):
         logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
     else:
-        logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.DEBUG)
+        if(comm.rank==0):
+            logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.DEBUG)
+        else:
+            logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.WARNING)
+
 
 
     priors = TophatPrior([1,0,0,-1,0,0,0,0],[10000,1,1,1,.1,.1,.1,.1])
@@ -395,6 +397,7 @@ if __name__ == '__main__' :
                 tmp_pdict=MPIrunAndUpdate(tmp_pdict)
 
             tmp_keys=list(tmp_pdict.keys())
+
             for t in tmp_keys:
                 tmp_exp=tmp_pdict[t]
                 #tmp_exp.gatherScore()
