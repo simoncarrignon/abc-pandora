@@ -16,11 +16,40 @@ from mpi4py import MPI
 if (MPI.COMM_WORLD.size > 1):
     mpi=1
     global comm 
-    global rank 
-    global size 
     comm = MPI.COMM_WORLD #get the value of the mpi cluster
-    rank = comm.rank #get the rank of the current worker
-    size = comm.size #get the total numver of workers      #return true if the application reach a limit too close to a total time ttime
+
+
+#split a dictionarry of experiment amoung all workers, an return a new dictionarry with the same experiment and the score updated
+def MPIrunAndUpdate(dict_exp):
+    dict_exp=comm.bcast(dict_exp,root=0) #the keys of  dictionary is send to all worker
+    tmp_keys=list(dict_exp.keys())
+    logging.debug(str(len(tmp_keys))+"keys for worker "+str(comm.rank))
+    sub_tmp_keys=np.array_split(tmp_keys,comm.size)[comm.rank]
+    logging.debug(str(len(sub_tmp_keys))+"sub keys for worker "+str(comm.rank))
+    dict_exp_score={}
+    for t in sub_tmp_keys:
+        tmp_exp=dict_exp[t]
+        tmp_exp.gatherScore()
+        dict_exp_score[t]=tmp_exp.score
+        logging.debug("compute score for "+t+"="+str(tmp_exp.score))
+    print("pdict len befor gather"+str(len(dict_exp))+" forworker "+str(comm.rank))
+    dict_exp_score=comm.gather(dict_exp_score,root=0) #send all the local best eff to the root worker
+    print("pdict after gather worker"+str(comm.rank))
+    if(comm.rank == 0):
+        dict_exp_score={k: v for d in dict_exp_score for k, v in d.iteritems()}
+        logging.debug("dict_exp_score in worker0")
+        logging.debug(dict_exp_score.values())
+        logging.debug("lets re-unify with dict_exp")
+        for t in tmp_keys:
+            logging.debug("before dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
+            dict_exp[t].score=dict_exp_score[t] 
+            logging.debug("after  dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
+    print("pdict after comp worker"+str(comm.rank))
+    dict_exp=comm.bcast(dict_exp,root=0) #the new dictionnary is send to all worker
+    logging.debug("new dict_exp of size="+str(len(dict_exp)))
+    return(dict_exp)
+
+
 def checkTime(start_time,ttime,limit):
     return(ttime - (time.time()-start_time) < limit) 
 
@@ -193,13 +222,15 @@ if __name__ == '__main__' :
 
     start_time=time.time()
 
-    if (not os.path.isdir("backup")): os.mkdir("backup")
-    backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for backup
-    backup=True
-    if (not os.path.isdir(backup_fold)): 
-        os.mkdir(backup_fold)
-        backup=False
+    if(not mpi):
+        if (not os.path.isdir("backup")): os.mkdir("backup")
+        backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for backup
+        backup=True
+        if (not os.path.isdir(backup_fold)): 
+            os.mkdir(backup_fold)
+            backup=False
 
+    if(mpi):backup = False
     orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
@@ -217,7 +248,11 @@ if __name__ == '__main__' :
     pref="eps_"+str(np.round(epsilons[0])) #this prefix is mainly use to store the data
 
     #open a general log file
-    logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
+    if(not mpi):
+        logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
+    else:
+        logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.DEBUG)
+
 
     priors = TophatPrior([1,0,0,-1,0,0,0,0],[10000,1,1,1,.1,.1,.1,.1])
     if(not backup):
@@ -232,7 +267,7 @@ if __name__ == '__main__' :
 
     isNeedLauncher=False
     
-    if(backup):
+    if(backup and not mpi):
         logging.debug("backup old analysis ")
         tmp_pdict=pickle.load(open(os.path.join(backup_fold,"tmp_pdict"),"r"))
         pdict=pickle.load(open(os.path.join(backup_fold,"pdict"),"r"))
@@ -356,24 +391,23 @@ if __name__ == '__main__' :
                             dead+=1
 
             ##update the pool of particule given their score if the experiment has finished
-            tmp_keys=list(tmp_pdict.keys())
-            print(str(len(tmp_keys))+" total")
             if(mpi):
-                print("node:"+str(rank)+"/"+str(size))
-                tmp_keys=array_split(alledge,size)[rank]
-                print(str(len(tmp_keys))+" for : "+str(ranl))
+                tmp_pdict=MPIrunAndUpdate(tmp_pdict)
+
+            tmp_keys=list(tmp_pdict.keys())
             for t in tmp_keys:
                 tmp_exp=tmp_pdict[t]
-                tmp_exp.gatherScore()
+                #tmp_exp.gatherScore()
                 if(tmp_exp.score>0):
                     if(tmp_exp.score >= epsilon):
                         tmp_exp.remove()
                         tmp_pdict.pop(t,None)
                     else:
                         if(len(pdict)<numParticule):
-                            with open(tmpres,'a') as tmp_out:
-                                tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
-                                tmp_out.close()
+                            if(comm.rank==0):
+                                with open(tmpres,'a') as tmp_out:
+                                    tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
+                                    tmp_out.close()
                             pdict[tmp_exp.getId()]=tmp_exp.score
                             newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
@@ -388,7 +422,8 @@ if __name__ == '__main__' :
             if((len(pdict) < numParticule and len(tmp_pdict) <= 0) or (len(pdict) < numParticule and len(tasks) == dead)): 
                 if(len(tmp_pdict)>0):
                     for i in tmp_pdict:
-                        logging.warning("those experiments should be destroyd")
+                        fanfarolleo=0
+                        #logging.warning("those experiments should be destroyd")
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
                 tmp_pdict=renewPool(numproc,pref,oldpool)
@@ -396,7 +431,7 @@ if __name__ == '__main__' :
                     writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
-            if(backup and (checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) )):
+            if(not mpi and backup and (checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) )):
                     logging.info("log backup")
                     pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
                     pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
@@ -412,7 +447,8 @@ if __name__ == '__main__' :
 
         #print(tmp_pdict)
 
-        writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
+        if(comm.rank==0):
+            writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
         logging.info('send cancel signal to remaining tasks')
         if(isNeedLauncher):
             for tid,tproc in tasks.items():
@@ -444,7 +480,7 @@ if __name__ == '__main__' :
         
         oldpool=new_raw
 
-        tmp_pdict=renewPool(numParticule,pref,oldpool)
+        tmp_pdict=renewPool(numproc,pref,oldpool)
         #print(tmp_pdict)
 
         pdict={}     #list of score for each exp
