@@ -380,7 +380,6 @@ getlistParticlesFromPath <- function(path){
 	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
 	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
 	names(listParticles)=epsilon
-	listParticles=lapply(listParticles,function(u) {u$ee_peryear = u$nstep/500;u$CulturalEvents = u$nstep/u$cstep; u$ce_peryear = u$CulturalEvents/500;return(u)})#u$ratio = (u$cstep)/u$nstep; u$ee_perce = (u$nstep)/u$CulturalEvents;
 	return(listParticles)
 }
 
