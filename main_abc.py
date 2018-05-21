@@ -80,6 +80,7 @@ def rawMatricesFromPool(pool):
 #as genTestPool return a dictionnary id=>exp
 def renewPool(N,pref,oldpool):
     pool_exp={}
+    #THIS CAN AND SHOULD BE PARALLELIZED
     for p in range(N):
         idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
         theta = oldpool["thetas"][idx]
@@ -237,9 +238,9 @@ if __name__ == '__main__' :
     except:
         print('not a slurm job')
 
-    numeps=30
+    numeps=40
     maxeps=3
-    mineps=1
+    mineps=.1
     epsilons=np.logspace(np.log10(maxeps),np.log10(mineps),numeps)
 
     epsilons=np.append(1000,epsilons) #first round = prior check
@@ -467,10 +468,13 @@ if __name__ == '__main__' :
         logging.info('ABC done for epsilon='+str(epsilon))
 
 
+        logging.info('compute new priors')
         new_raw=rawMatricesFromPool(newpool)
 
 
+        logging.info('apply twice cov')
 
+        a=0
         sigma=2 * weighted_cov(oldpool["thetas"],oldpool["ws"])
         new_raw["sigma"]=sigma
         new_raw["ws"]=[]
@@ -483,7 +487,9 @@ if __name__ == '__main__' :
         
         oldpool=new_raw
 
+        logging.info('renew expe pool')
         tmp_pdict=renewPool(numproc,pref,oldpool)
+        logging.info('new priors ok')
         #print(tmp_pdict)
 
         pdict={}     #list of score for each exp
