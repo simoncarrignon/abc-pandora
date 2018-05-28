@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=MOTHER
+#SBATCH --output=MOTHER_%j.out
+#SBATCH --error=MOTHER_%j.err
+#SBATCH --ntasks=480
+#SBATCH --time=01:35:00
+#SBATCH --qos=debug
+
+start=`date +%s` #record the time to log the total execution time
+
+mpirun -n 480 python main_abc.py $@ 
+
+end=`date +%s`
+
+runtime=$((end-start))
+
+echo "total time: $runtime"
