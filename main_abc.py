@@ -13,6 +13,9 @@ from abctools.sampler import weighted_cov
 from modelwrapper.apemccExp import *
 
 from mpi4py import MPI
+global mpi
+mpi = 0
+
 if (MPI.COMM_WORLD.size > 1):
     mpi=1
     global comm 
@@ -80,26 +83,58 @@ def rawMatricesFromPool(pool):
 #as genTestPool return a dictionnary id=>exp
 def renewPool(N,pref,oldpool):
     pool_exp={}
-    #THIS CAN AND SHOULD BE PARALLELIZED
-    for p in range(N):
-        idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
-        theta = oldpool["thetas"][idx]
-        sigma = oldpool["sigma"]
-        params = np.random.multivariate_normal(theta, sigma)
-
-        #while (params<0).any():
-        #    params = np.random.multivariate_normal(theta, sigma)
-
-        one=Experiment(params,pref)
-        while(not one.consistence):
+    if(not mpi):
+        #THIS CAN AND SHOULD BE PARALLELIZED
+        for p in range(N):
             idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
             theta = oldpool["thetas"][idx]
             sigma = oldpool["sigma"]
             params = np.random.multivariate_normal(theta, sigma)
+
             #while (params<0).any():
             #    params = np.random.multivariate_normal(theta, sigma)
+
             one=Experiment(params,pref)
-        pool_exp[one.getId()]=one
+            while(not one.consistence):
+                idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
+                theta = oldpool["thetas"][idx]
+                sigma = oldpool["sigma"]
+                params = np.random.multivariate_normal(theta, sigma)
+                #while (params<0).any():
+                #    params = np.random.multivariate_normal(theta, sigma)
+                one=Experiment(params,pref)
+            pool_exp[one.getId()]=one
+    if(mpi):
+        rng=np.array_split(range(N),comm.size)[comm.rank]
+        listparam=list()
+        for p in rng:
+            idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
+            theta = oldpool["thetas"][idx]
+            sigma = oldpool["sigma"]
+            params = np.random.multivariate_normal(theta, sigma)
+            one=Experiment(params,pref)
+            while(not one.consistence):
+                idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
+                theta = oldpool["thetas"][idx]
+                sigma = oldpool["sigma"]
+                params = np.random.multivariate_normal(theta, sigma)
+                #while (params<0).any():
+                #    params = np.random.multivariate_normal(theta, sigma)
+                one=Experiment(params,pref)
+            one.remove()
+            listparam.append(params)
+        allparams=comm.gather(listparam,root=0) #I am usign this list of list because I am not sure if it will work with dictionary
+        if(comm.rank == 0): 
+            allparams=[p for sub in allparams for p in sub]
+            for p in allparams:
+                one=Experiment(p,pref)
+                pool_exp[one.getId()]=one
+        pool_exp=comm.bcast(pool_exp,root=0) #the new dictionnary is send to all worker
+        #logging.warning("check expe")
+        #for ex in pool_exp:
+        #    logging.warning(pool_exp[ex].getId())
+        #    logging.warning(pool_exp[ex].params)
+        #logging.warning("end check")
     return(pool_exp)
 
 
@@ -221,15 +256,19 @@ if __name__ == '__main__' :
 
     start_time=time.time()
 
-    if(not mpi):
+    backup=False
+    backup_fold=""
+
+    if(comm.rank==0):
         if (not os.path.isdir("backup")): os.mkdir("backup")
         backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for backup
         backup=True
         if (not os.path.isdir(backup_fold)): 
             os.mkdir(backup_fold)
             backup=False
+    backup=comm.bcast(backup,root=0) #the new dictionnary is send to all worker
+    backup_fold=comm.bcast(backup_fold,root=0) #the new dictionnary is send to all worker
 
-    if(mpi):backup = False
     orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
     jobid+=str(os.getpid())
@@ -270,7 +309,7 @@ if __name__ == '__main__' :
 
     isNeedLauncher=False
     
-    if(backup and not mpi):
+    if(backup):
         logging.debug("backup old analysis ")
         tmp_pdict=pickle.load(open(os.path.join(backup_fold,"tmp_pdict"),"r"))
         pdict=pickle.load(open(os.path.join(backup_fold,"pdict"),"r"))
@@ -431,11 +470,12 @@ if __name__ == '__main__' :
                 logging.info("regenerate new taskfiles")
                 ###re-initialize pool
                 tmp_pdict=renewPool(numproc,pref,oldpool)
+                print("len new expe:"+str(len(tmp_pdict)))
                 if(isNeedLauncher):
                     writeNupdate(tmp_pdict)
                 ##findFileneNameAndUpdateCounter
                 #Launch remaining tasks
-            if(not mpi and backup and (checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) )):
+            if((checkTime(start_time,ttime*60,30) or (len(pdict) == numParticule) and comm.rank == 0)):
                     logging.info("log backup")
                     pickle.dump(tmp_pdict,open(os.path.join(backup_fold,"tmp_pdict"),"w"))
                     pickle.dump(pdict,open(os.path.join(backup_fold,"pdict"),"w"))
