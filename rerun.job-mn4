@@ -1,0 +1,43 @@
+#!/bin/bash
+#SBATCH --job-name=rerun
+#SBATCH --output=rerun-%j.out
+#SBATCH --error=rerun-%j.err
+#SBATCH --ntasks=768
+#SBATCH --time=00:05:00
+#SBATCH --qos=debug
+
+
+FILE=$1
+
+##################################################
+# Here goes the path to the place where the logs #
+# will be written.                               #
+# By default, if not set, it will use:           #
+# ./greasy.log                                   #
+# or                                             #
+# ./greasy-<jobid>.log if inside lsf job         #
+##################################################
+
+# export GREASY_LOGFILE=JNAME_greasy-%j.log
+
+##################################################
+# If running this script interactively, please   #
+# set the desired number of workers. The number  #
+# of workers should not be higher than the       #
+# available cpus.                                #
+# If remote spawning is available, set up the    #
+# comma-separated hostlist as well.              #
+##################################################
+
+#export GREASY_NWORKERS=1
+
+
+#export GREASY_TASKS_PER_NODE=4
+# export GREASY_NODELIST=node1,node2,node3
+
+##################################################
+# Run greasy!                                    #
+##################################################
+
+/apps/GREASY/latest/INTEL/IMPI/bin/greasy $FILE
+

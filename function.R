@@ -9,6 +9,7 @@ zscore <- function(sim,dat){abs(mean(apply((abs(sim-dat)-apply(abs(sim-dat),2,me
 
 difzs <- function(sim,dat){return(realzscore(sim)-realzscore(dat))}
 
+
 realzscore <- function(dat){
 	mu=apply(dat,2,mean)
 	si=apply(dat,2,sd)
@@ -287,16 +288,18 @@ jaccard <- function(a,b){
 }
 
 #use a matrix create by agentWith or getRealDataCount and print each line with different colors
-plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,...){
+plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,alpha=NULL,ylim=NULL,...){
 if(require("RColorBrewer")){library(RColorBrewer)}
 	clrs=brewer.pal(ncol(matrixGoodPerSite),"Set2")
+    if(!is.null(alpha))clrs=alpha(clrs,alpha) 
+
 	names(clrs)=colnames(matrixGoodPerSite)
 	par(xpd=NA)
 	if(is.null(main))main="Number of sites with good type"
 	if(is.null(ylab))ylab="number of sites"
 	if(is.null(xlab))xlab="period"
-
-	plot(1:nrow(matrixGoodPerSite),matrixGoodPerSite[,1] ,type="n",ylim=range(matrixGoodPerSite),bty="n",main=main,xlab=xlab,ylab=ylab,...) 
+    if(is.null(ylim))ylim=range(matrixGoodPerSite)
+	plot(1:nrow(matrixGoodPerSite),matrixGoodPerSite[,1],ylim=ylim,type="n",,bty="n",main=main,xlab=xlab,ylab=ylab,...) 
     if(is.na(g)){
 	sapply(colnames(matrixGoodPerSite),function(i)lines(1:nrow(matrixGoodPerSite), matrixGoodPerSite[,i]   ,col=clrs[i],lwd=3))
 	text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),],labels=paste(colnames(matrixGoodPerSite)),cex=.8,adj=0)
@@ -309,5 +312,75 @@ if(require("RColorBrewer")){library(RColorBrewer)}
 
 }
 
-getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:5],collapse=".")
-getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[6]
+##return the folder name of the best simulation
+getbest <- function(x)paste0(unlist(strsplit(names(which.min(x) ),"\\."))[1:6],collapse=".")
+##return a list of folder name for the top `num` best simulations
+getbestb <- function(x,num=10)sapply(strsplit(names(sort(x)[1:num]),"\\."),function(i)paste0(i[1:6],collapse=".")) 
+getyear <- function(x)unlist(strsplit(names(which.min(x) ),"\\."))[7]
+
+#given a datalist as the one given by getAllScore, return the list of folder of the topten
+listfolder <- function(data,topten=50)
+{
+	as.vector(unlist(sapply(names(data),function(diff)
+				sapply(names(data[[diff]]),function(prop)
+				       sapply(names(data[[diff]][[prop]]),function(pat) return(getbestb(data[[diff]][[prop]][[pat]],num=topten)))
+				       )
+				)))
+}
+
+#given a datalist as the one given by getAllScore, print all the best of each core each prop etc.. 
+printAllBest <- function(data){
+	par(mfrow=c(length(data)+1,length(data[[1]])*(length(data[[1]][[1]])+1)),oma=rep(4,4))
+	sapply(names(data),function(diff)
+	 {
+		 v=sapply(names(data[[diff]]),function(prop)
+			  {
+				  u=sapply(names(data[[diff]][[prop]]),function(pat)
+					   {
+						   if(pat=="both"){
+						   printbest(data,diff,prop,pat,"dis")
+						   printbest(data,diff,prop,pat,"div")
+						   }
+						   else
+						   printbest(data,diff,prop,pat)
+						   mtext(pat,1)
+					   }
+				  )
+
+				  mtext(prop,1,2)
+				  return(u)
+
+			  }
+		 )
+
+		 mtext(diff,4)
+		 return(v)
+	 }
+	)
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="dis",proportion = F))
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="div",proportion = F))
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="dis",proportion = T))
+	plotSiteWithGood(getRealDataCount(numperiods=50,pattern="div",proportion = T))
+	par(mfrow=c(1,1))
+}
+
+#print the best for one given pat, prop, diff, of a list of score
+printbest <- function(data,diff,prop,pat,patB=NULL){
+	if(is.null(patB))patB=pat
+	ip= prop == "prop"
+	elected=getbest(data[[diff]][[prop]][[pat]])
+	el=unlist(strsplit(elected,"/"))
+	plotSiteWithGood(agentWith(read.csv(file.path("exter/",elected,"agents.csv"),sep=";"),numsite=200,numperiods=50,pattern=patB,proportion = ip),main=el[length(el)])
+}
+
+getboth <- function(data,weight=c(1,1)){
+	lapply(data,function(diff)
+	       {
+		       lapply(diff,function(prop)
+			      {
+				      list(dis=prop[["dis"]],div=prop[["div"]],both=(1/2)*(prop[["div"]]*weight[1]+prop[["dis"]]*weight[2]))
+			      }
+		       )
+	       }
+	)
+}
