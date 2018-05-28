@@ -323,7 +323,7 @@ plotDensities <- function(table,param,epsilon,...){
 	names(htcolF)[length(htcolF)]="prior"
 	listParticles=table[2:length(table)]
 	names(listParticles)=epsilon
-	densities=lapply(listParticles,function(i){density(i[,param],from=0)})#,from=from,to=to)})
+	densities=lapply(listParticles,function(i){density(i[,param],from=range(i[,param])[1],to=range(i[,param])[2])})#,from=from,to=to)})
 	densitiesPrio=density(prior,from=from,to=to)
 	names(densities)=epsilon
 	rangex=range(lapply(densities,function(i)range(i$x)),densitiesPrio$x)
@@ -332,7 +332,7 @@ plotDensities <- function(table,param,epsilon,...){
 	plot(density(listParticles[[1]][,param]),ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
 	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),col=htcolF[length(htcolF)],lwd=2)
 	lapply(seq_along(densities),function(i){
-	       polygon(c(rangex[1],densities[[i]]$x,0),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
+	       polygon(c(min(densities[[i]]$x),densities[[i]]$x,max(densities[[i]]$x)),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
 	       #	   abline(v=mean(densities[[i]]$x),col=htcol[names(densities)[i]])
 	       #	   text(mean(densities[[i]]$x),0,names(densities)[i],col=htcol[names(densities)[i]])
 })
@@ -376,9 +376,11 @@ plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
 #return a list with epsilon as names and the correspondig thetas => score dataframe
 
 getlistParticlesFromPath <- function(path){
-	lf=list.files(path,pattern="resul_*")
-	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
-	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
+	lf=list.files(path,pattern="result_*")
+    numval=as.numeric(sub("result_(.*).csv","\\1",lf))
+    names(numval)=lf
+	epsilon=lf[order(numval,decreasing = T)]
+	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(file.path(path,eps)),epsilon=numval[eps])})
 	names(listParticles)=epsilon
 	return(listParticles)
 }
