@@ -132,6 +132,7 @@ agentWith <- function(expe,goods=NULL,timestep=NULL,numperiods=NULL,joinfunction
 			stop("the number of site to sample is changing throuhg time")
 		finalres=getprop(finalres,total = numsite[1] )
 		finalres[is.na(finalres)]=0
+        print(paste("dim",dim(finalres)))
 	}
 	return(finalres)
 }
@@ -144,7 +145,7 @@ getSimuCount <- function(numperiods,pattern="div",goods=NULL,proportion=T){
 
 
 
-diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div",numsite=40){
+diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div",numsite=40,goods=NULL){
 
     diffstr=deparse(substitute(diff))
 
@@ -159,12 +160,13 @@ diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div",
         dataexp=get(countid)
 
     print(paste("compute:",numperiods,proportion,pattern,simu))
-    dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern)
+    dt=getRealDataCount(numperiods=numperiods,proportion=proportion,pattern=pattern,goods=goods)
     tryCatch(
              {
-                 rdt=agentWith(dataexp,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=numsite)
+                 rdt=agentWith(dataexp,numperiods=numperiods,proportion=proportion,pattern=pattern,bias=1,numsite=numsite,goods=goods)
+                 print(paste("dim results",dim(dt)))
                  return(diff(dt,rdt))
-             },error=function(err){return(NA)})
+             },error=function(err){print(paste("problem ",dim(dt)));return(NA)})
 }
 
 
@@ -174,7 +176,7 @@ diffData <- function(numperiods=40,simu,proportion=T,diff=absdiff,pattern="div",
 #pattern realdata to ompare 
 #par=T true if to be parallelized
 #prop=T true if to use proportions
-getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T,numsite=40){
+getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T,numsite=40,goods=NULL){
 	print(par)
 	print(length(datalist))
 
@@ -183,13 +185,14 @@ getAllScores <- function(datalist,allperiods,diff,pattern,par=T,proportion=T,num
 		cl <- makeCluster(detectCores()-1,outfile="",type="FORK")
 
 
-		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
+		res=parSapply(cl,datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,goods=goods,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
 		stopCluster(cl)
 	}
 	if(par=="mpi")
-		res=mpi.parSapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
+		res=mpi.parSapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,goods=goods,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
 	else
-		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,pattern=pattern,numsite=numsite)},prd=allperiods)
+		res=sapply(datalist,function(eij,prd){sapply(prd, diffData,simu=eij,proportion=proportion,diff=diff,goods=goods,pattern=pattern,numsite=numsite)},prd=allperiods)
+    print(length(res))
 	return(res)
 }
 
@@ -213,6 +216,7 @@ getRealDataCount <- function(numperiods,pattern="div",goods=NULL,proportion=T,ba
 	}else{
 		load(filenameBackup)
 	}
+    print(paste("dim",dim(realdata)))
 	return(realdata)
 
 }
