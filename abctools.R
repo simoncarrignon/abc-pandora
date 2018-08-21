@@ -456,3 +456,44 @@ plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
 
 }
 
+
+#'@return a string with the thetas as a a fodlername thetas1_theta2_thetat3_...
+#'@param thetas : a list of theta (\emph{ie} the paramater of a simualtion)
+#'@param pref : the folder in which is supposed to be the simulation
+#'@param e : a regular expression to be used when cutting the number to avoid problem coming from python vs R differents way of rounding real numbers and difference between bash and R regex. Usually: "*" ".*" or ""
+#'@param trunclvl: allow to cut reals without rounding them after a certain number of number after the 0.
+thetas2fold <- function(thetas,pref="./",e="*",trunclvl=6){
+    if(!is.null(trunclvl))thetas=trunc(thetas[c("nstep","cstep","mu","mumax","copy","strb")]*10^trunclvl)/10^trunclvl
+    subfold=paste0(thetas[c("nstep","cstep","mu","mumax","copy","strb")],collapse=paste0(e,"_"))
+    subfold=paste0(subfold,e)
+    return(file.path(pref,subfold))
+}
+
+
+#given thetas, return pattern ( dis or div) for this good
+getGoodFromThetas <- function(thetas,goods=NULL,pref="./",pat="dis"){
+    #pref=file.path(pref,paste0("eps_",thetas["epsilon"]))
+    try({
+    results=read.csv(file.path(thetas2fold(thetas,pref),"agents.csv"),sep=";")
+    if(is.null(goods)) goods=as.character(levels(results$p_good))
+    agentWith(results,goods=goods,pat=pat,numperiods = 50)
+    })
+}
+
+
+getAllElmtFormListOfthetas <- function(listoftheta,elements,pref="./",pat="dis"){
+    tot=nrow(listoftheta)
+    apply(listoftheta,1,function(l)try(getGoodFromThetas(l,pref=pref,pat=pat)[,elements]))
+}
+
+
+#generate a csv to be use by rsync to get the simulation
+#the to get the file :  for i in `cat $outfile` ; do rsync -avzR dlmn:$i test/ ; done (note:not sure why --files-from $outfile is not working in that case)
+generateAllFileNames <- function(listofthetas,outfile,pref="./"){
+ listoffolder=apply(listofthetas,1,function(l)thetas2fold(l,pref=pref,e="*",trunclvl=6))
+write.csv(paste0(listoffolder,"/agents.csv"),file=outfile,row.names=F,col.names=F,quote=F)
+}
+
+
+tolistrow <- function(table)lapply(1:nrow(table),function(l)table[l,])
+tolistcol <- function(table)lapply(1:ncol(table),function(l)table[,l])
