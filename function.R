@@ -284,7 +284,7 @@ jaccard <- function(a,b){
 }
 
 #use a matrix create by agentWith or getRealDataCount and print each line with different colors
-plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,alpha=NULL,ylim=NULL,...){
+plotSiteWithGood <- function(matrixGoodPerSite,g=NA,ylab=NULL,xlab=NULL,main=NULL,alpha=NULL,ylim=NULL,legend=NULL,legend.pos="bottomright",nameslines=T,...){
 if(require("RColorBrewer")){library(RColorBrewer)}
 	clrs=brewer.pal(ncol(matrixGoodPerSite),"Set2")
     if(!is.null(alpha))clrs=alpha(clrs,alpha) 
@@ -298,13 +298,13 @@ if(require("RColorBrewer")){library(RColorBrewer)}
 	plot(1:nrow(matrixGoodPerSite),matrixGoodPerSite[,1],ylim=ylim,type="n",,bty="n",main=main,xlab=xlab,ylab=ylab,...) 
     if(is.na(g)){
 	sapply(colnames(matrixGoodPerSite),function(i)lines(1:nrow(matrixGoodPerSite), matrixGoodPerSite[,i]   ,col=clrs[i],lwd=3))
-	text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),],labels=paste(colnames(matrixGoodPerSite)),cex=.8,adj=0)
+	if(nameslines)text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),],labels=paste(colnames(matrixGoodPerSite)),cex=.8,adj=0)
     }
     else{
 	points(1:nrow(matrixGoodPerSite), matrixGoodPerSite[,g]   ,col=clrs[g],lwd=3)
-	text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),g],labels=paste(colnames(matrixGoodPerSite))[g],cex=.8,adj=0)
+	if(nameslines)text(nrow(matrixGoodPerSite)+.2,matrixGoodPerSite[nrow(matrixGoodPerSite),g],labels=paste(colnames(matrixGoodPerSite))[g],cex=.8,adj=0)
     }
-	if(is.null(legend))legend("bottomright",legend=colnames(matrixGoodPerSite),col=clrs,lwd=3,cex=.8)
+	if(is.null(legend))legend(x=legend.pos,legend=colnames(matrixGoodPerSite),col=clrs,lwd=3,cex=.8)
 
 }
 
