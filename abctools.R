@@ -2,7 +2,7 @@
 legend  <- function (x, y = NULL, legend, fill = NULL, col = par("col"), 
     border = "black", lty, lwd, pch, angle = 45, density = NULL, 
     bty = "o", bg = par("bg"), box.lwd = par("lwd"), box.lty = par("lty"), 
-    box.col = par("fg"), pt.bg = NA, cex = 1, pt.cex = cex, pt.lwd = lwd, 
+    box.cex = c(0.8,0.5),box.col = par("fg"), pt.bg = NA, cex = 1, pt.cex = cex, pt.lwd = lwd, 
     xjust = 0, yjust = 1, x.intersp = 1, y.intersp = 1, adj = c(0, 
         0.5), text.width = NULL, text.col = par("col"), text.font = NULL, 
     merge = do.lines && has.pch, trace = FALSE, plot = TRUE, 
@@ -109,8 +109,8 @@ legend  <- function (x, y = NULL, legend, fill = NULL, col = par("col"),
         catn("  xchar=", xchar, "; (yextra,ychar)=", c(yextra, 
             ychar))
     if (mfill) {
-        xbox <- xc * 0.8
-        ybox <- yc * 0.5
+        xbox <- xc * box.cex[1]
+        ybox <- yc * box.cex[2]
         dx.fill <- xbox
     }
     do.lines <- (!missing(lty) && (is.character(lty) || any(lty > 
@@ -428,11 +428,12 @@ names(thetas)=c("nstep","cstep","mu","mumax","copy","strb")
 return(thetas)
 }
 
-plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
+plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,cols=c(alpha("red",.8),alpha("blue",.8),alpha("yellow",.8)),...){
 
     denseP=NULL
     denseA=NULL
     denseB=NULL
+    if(!is.null(prior))prior=prior[!is.na(prior)]
     if(is.null(from))from=min(A,B,prior)
     if(is.null(to))to=max(A,B,prior)
     if(!is.null(A))denseA=density(A,from=from,to=to)
@@ -441,7 +442,7 @@ plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
     else if(!is.null(prior))denseP=density(prior,from=from,to=to)
     print("donde")
 
-    cols=c(alpha("red",.8),alpha("blue",.8),alpha("yellow",.8))
+    
     names(cols)=c("P","A","B")
     rangex=range(denseB$x,denseA$x,denseP$x)
     rangey=range(denseB$y,denseA$y,denseP$y)
