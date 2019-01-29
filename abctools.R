@@ -371,10 +371,8 @@ plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
     return(listParticles)
 }
 
-
 #take a path as argument and given that this path has a list of files of the form result_epsilon.csv
 #return a list with epsilon as names and the correspondig thetas => score dataframe
-
 getlistParticlesFromPath <- function(path){
 	lf=list.files(path,pattern="result_*")
     numval=as.numeric(sub("result_(.*).csv","\\1",lf))

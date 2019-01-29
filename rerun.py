@@ -187,6 +187,7 @@ if __name__ == '__main__' :
     #stime=float(sys.argv[4])  #changing the last argument for the time asked for subjobs (temporary, should be computed given cstep and nstep)
     pref=str(sys.argv[4])  #changing the last argument for the time asked for subjobs (temporary, should be computed given cstep and nstep)
     epsilon=str(sys.argv[5])  #the file storing the epsilon to test
+    pref=pref+"-"+re.sub("result_","",epsilon)[0:8] #assuming the epsilon is of the form result_1.232342, we take the 8 first digit
 
     start_time=time.time()
     alltotest=[]
