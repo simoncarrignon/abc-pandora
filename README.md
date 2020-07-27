@@ -107,7 +107,8 @@ this will create `numParticule/numpart_pernode` taskfiles and a folder `pref-rer
 You can then simply send the files to marenostrum via greasy using rerun.job-mn4
 
 the full setup would be:
-``bash
+
+```bash
 python rerun.py 10000 768 48 "tenthousand" result_0.0101072379299.csv #generate a bunch of taskfile 
 for i in `seq 1 10`; do sbatch rerun.job-mn4 rerun-tenthousand.task.$i ; done #launch a bunch of this bunch one shot
 ```
