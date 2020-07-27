@@ -48,13 +48,13 @@ If some python packages are missing install them same way as before
 
 ## usage exemple
 
-So more or less you have everything. Obviously that wont work yet but let's imagine it will, we will run the experiments in a new folder. Dont forget that **ABC needs lot of space** so it may be wise to use a place like SCRATCH for your experiments (if your in amrenotrum, if not do what you want, that your hard drive)
+So more or less you have everything. Obviously that wont work yet but let's imagine it will, we will run the experiments in a new folder. Dont forget that **ABC needs lot of space**, as it will store millions of folder, config files, and results. It may be wise to use a place like $SCRATCH for your experiments (if your in marenotrum, if not do what you want, that's your hard drive)
 
 let's do a new folder:
 
 ```bash 
-mkdir $SCRATCH/MAGA #Make ABC Great Again
-cd $SCRATCH/MAGA
+mkdir $SCRATCH/test 
+cd $SCRATCH/test
 ```
 
 If you haven't done it yet you can git clone the tools here:
