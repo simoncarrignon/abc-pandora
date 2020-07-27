@@ -19,32 +19,6 @@ Simple readme to do ABC on various architectures (at least MN4,tentative of Nord
 ln -s ~/mn_tools/mn4_manual_scheduling.sh .
 ```
 
-### Python
-
-
-#### install manually python libs:
-I will leave this here just in case, with the original exemple of beautifulsoup __but__ this package is not used anymore.
-
-
-From source [here](http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/changes)
-
-you need to download a tarball from exemple [here]( http://bazaar.launchpad.net/~leonardr/beautifulsoup/bs4/revision/449?start_revid=449) and copy in marenostrum untar and go to the folder
-
-befor edoing the install you will have to create a folder for manuall python installa nd add the folder to your PYTHONPATH 
-
-```
-mkdir  ${HOME}/python_libs
-export PYTHONPATH=${HOME}/python_libs/lib/python:PYTHONPATH
-```
-
-then you can do
-```bash
-tar xzvf  tarbal.tgz
-cd bs4
-python setup.py install --home ${HOME}/python_libs
-```
-### on nord 3
-If some python packages are missing install them same way as before
 
 ## usage exemple
 
@@ -91,12 +65,12 @@ where
 Now that I realized that `greasy` was available you can just use the `2mn4.sh` script in the folder and do:
 
 ```bash
-sbatch  2mn4.sh numParticule numpart  numproc_node epsilon
+sbatch main.job-mn4 numParticule numpart  numproc_node epsilon
 ```
 
 ## Test the results
 
-Once you are satisfied with a list of particle with `epsilon < N`, you can rerun more experiments using thos thetas. To do so use the script `rerun.py`
+Once you are satisfied with a list of particle with `epsilon < N`, you can rerun more experiments using those thetas. To do so use the script `rerun.py`
 
 ```bash
 python rerun.py numParticule numpart_pernode pref epsilon
