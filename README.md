@@ -92,7 +92,24 @@ Now that I realized that `greasy` was available you can just use the `2mn4.sh` s
 
 ```bash
 sbatch  2mn4.sh numParticule numpart  numproc_node epsilon
+```
 
+## Test the results
+
+Once you are satisfied with a list of particle with `epsilon < N`, you can rerun more experiments using thos thetas. To do so use the script `rerun.py`
+
+```bash
+python rerun.py numParticule numpart_pernode pref epsilon
+```
+
+this will create `numParticule/numpart_pernode` taskfiles and a folder `pref-rerun` with all the experiments listed in the taskfiles. 
+
+You can then simply send the files to marenostrum via greasy using rerun.job-mn4
+
+the full setup would be:
+``bash
+python rerun.py 10000 768 48 "tenthousand" result_0.0101072379299.csv #generate a bunch of taskfile 
+for i in `seq 1 10`; do sbatch rerun.job-mn4 rerun-tenthousand.task.$i ; done #launch a bunch of this bunch one shot
 ```
 
 

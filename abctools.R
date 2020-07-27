@@ -2,7 +2,7 @@
 legend  <- function (x, y = NULL, legend, fill = NULL, col = par("col"), 
     border = "black", lty, lwd, pch, angle = 45, density = NULL, 
     bty = "o", bg = par("bg"), box.lwd = par("lwd"), box.lty = par("lty"), 
-    box.col = par("fg"), pt.bg = NA, cex = 1, pt.cex = cex, pt.lwd = lwd, 
+    box.cex = c(0.8,0.5),box.col = par("fg"), pt.bg = NA, cex = 1, pt.cex = cex, pt.lwd = lwd, 
     xjust = 0, yjust = 1, x.intersp = 1, y.intersp = 1, adj = c(0, 
         0.5), text.width = NULL, text.col = par("col"), text.font = NULL, 
     merge = do.lines && has.pch, trace = FALSE, plot = TRUE, 
@@ -109,8 +109,8 @@ legend  <- function (x, y = NULL, legend, fill = NULL, col = par("col"),
         catn("  xchar=", xchar, "; (yextra,ychar)=", c(yextra, 
             ychar))
     if (mfill) {
-        xbox <- xc * 0.8
-        ybox <- yc * 0.5
+        xbox <- xc * box.cex[1]
+        ybox <- yc * box.cex[2]
         dx.fill <- xbox
     }
     do.lines <- (!missing(lty) && (is.character(lty) || any(lty > 
@@ -323,7 +323,7 @@ plotDensities <- function(table,param,epsilon,...){
 	names(htcolF)[length(htcolF)]="prior"
 	listParticles=table[2:length(table)]
 	names(listParticles)=epsilon
-	densities=lapply(listParticles,function(i){density(i[,param],from=0)})#,from=from,to=to)})
+	densities=lapply(listParticles,function(i){density(i[,param],from=range(i[,param])[1],to=range(i[,param])[2])})#,from=from,to=to)})
 	densitiesPrio=density(prior,from=from,to=to)
 	names(densities)=epsilon
 	rangex=range(lapply(densities,function(i)range(i$x)),densitiesPrio$x)
@@ -332,7 +332,7 @@ plotDensities <- function(table,param,epsilon,...){
 	plot(density(listParticles[[1]][,param]),ylim=rangey,xlim=rangex,type="n",main="", xlab=substitute(p,list(p=param)),...)
 	polygon(c(from,densitiesPrio$x,to),c(0,densitiesPrio$y,0),col=htcolF[length(htcolF)],lwd=2)
 	lapply(seq_along(densities),function(i){
-	       polygon(c(rangex[1],densities[[i]]$x,0),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
+	       polygon(c(min(densities[[i]]$x),densities[[i]]$x,max(densities[[i]]$x)),c(0,densities[[i]]$y,0),col=htcolF[names(densities)[i]],lwd=2)#,density=20,angle=45*i,border=htcol[names(densities)[i]])
 	       #	   abline(v=mean(densities[[i]]$x),col=htcol[names(densities)[i]])
 	       #	   text(mean(densities[[i]]$x),0,names(densities)[i],col=htcol[names(densities)[i]])
 })
@@ -371,16 +371,15 @@ plotDensitiesFrompath <- function(path,param,epsilon,from,to,...){
     return(listParticles)
 }
 
-
 #take a path as argument and given that this path has a list of files of the form result_epsilon.csv
 #return a list with epsilon as names and the correspondig thetas => score dataframe
-
 getlistParticlesFromPath <- function(path){
-	lf=list.files(path,pattern="resul_*")
-	epsilon=sort(sub("result_(.*).csv","\\1",lf),decreasing=T)
-	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(paste(path,"result_",eps,".csv",sep="") ),epsilon=eps)})
+	lf=list.files(path,pattern="result_*")
+    numval=as.numeric(sub("result_(.*).csv","\\1",lf))
+    names(numval)=lf
+	epsilon=lf[order(numval,decreasing = T)]
+	listParticles=lapply(epsilon,function(eps){print(eps);cbind(read.csv(file.path(path,eps)),epsilon=numval[eps])})
 	names(listParticles)=epsilon
-	listParticles=lapply(listParticles,function(u) {u$ee_peryear = u$nstep/500;u$CulturalEvents = u$nstep/u$cstep; u$ce_peryear = u$CulturalEvents/500;return(u)})#u$ratio = (u$cstep)/u$nstep; u$ee_perce = (u$nstep)/u$CulturalEvents;
 	return(listParticles)
 }
 
@@ -427,11 +426,12 @@ names(thetas)=c("nstep","cstep","mu","mumax","copy","strb")
 return(thetas)
 }
 
-plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
+plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,cols=c(alpha("red",.8),alpha("blue",.8),alpha("yellow",.8)),...){
 
     denseP=NULL
     denseA=NULL
     denseB=NULL
+    if(!is.null(prior))prior=prior[!is.na(prior)]
     if(is.null(from))from=min(A,B,prior)
     if(is.null(to))to=max(A,B,prior)
     if(!is.null(A))denseA=density(A,from=from,to=to)
@@ -440,7 +440,7 @@ plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
     else if(!is.null(prior))denseP=density(prior,from=from,to=to)
     print("donde")
 
-    cols=c(alpha("red",.8),alpha("blue",.8),alpha("yellow",.8))
+    
     names(cols)=c("P","A","B")
     rangex=range(denseB$x,denseA$x,denseP$x)
     rangey=range(denseB$y,denseA$y,denseP$y)
@@ -455,3 +455,44 @@ plot2dens <- function(A=NULL,B=NULL,from=NULL,to=NULL,prior=NULL,...){
 
 }
 
+
+#'@return a string with the thetas as a a fodlername thetas1_theta2_thetat3_...
+#'@param thetas : a list of theta (\emph{ie} the paramater of a simualtion)
+#'@param pref : the folder in which is supposed to be the simulation
+#'@param e : a regular expression to be used when cutting the number to avoid problem coming from python vs R differents way of rounding real numbers and difference between bash and R regex. Usually: "*" ".*" or ""
+#'@param trunclvl: allow to cut reals without rounding them after a certain number of number after the 0.
+thetas2fold <- function(thetas,pref="./",e="*",trunclvl=6){
+    if(!is.null(trunclvl))thetas=trunc(thetas[c("nstep","cstep","mu","mumax","copy","strb")]*10^trunclvl)/10^trunclvl
+    subfold=paste0(thetas[c("nstep","cstep","mu","mumax","copy","strb")],collapse=paste0(e,"_"))
+    subfold=paste0(subfold,e)
+    return(file.path(pref,subfold))
+}
+
+
+#given thetas, return pattern ( dis or div) for this good
+getGoodFromThetas <- function(thetas,goods=NULL,pref="./",pat="dis"){
+    #pref=file.path(pref,paste0("eps_",thetas["epsilon"]))
+    try({
+    results=read.csv(file.path(thetas2fold(thetas,pref),"agents.csv"),sep=";")
+    if(is.null(goods)) goods=as.character(levels(results$p_good))
+    agentWith(results,goods=goods,pat=pat,numperiods = 50)
+    })
+}
+
+
+getAllElmtFormListOfthetas <- function(listoftheta,elements,pref="./",pat="dis"){
+    tot=nrow(listoftheta)
+    apply(listoftheta,1,function(l)try(getGoodFromThetas(l,pref=pref,pat=pat)[,elements]))
+}
+
+
+#generate a csv to be use by rsync to get the simulation
+#the to get the file :  for i in `cat $outfile` ; do rsync -avzR dlmn:$i test/ ; done (note:not sure why --files-from $outfile is not working in that case)
+generateAllFileNames <- function(listofthetas,outfile,pref="./"){
+ listoffolder=apply(listofthetas,1,function(l)thetas2fold(l,pref=pref,e="*",trunclvl=6))
+write.csv(paste0(listoffolder,"/agents.csv"),file=outfile,row.names=F,col.names=F,quote=F)
+}
+
+
+tolistrow <- function(table)lapply(1:nrow(table),function(l)table[l,])
+tolistcol <- function(table)lapply(1:ncol(table),function(l)table[,l])

@@ -3,6 +3,7 @@
 *.pyc
 *.sw?
 *.task
+*.task.*
 *.csv
 *.log
 *.err
