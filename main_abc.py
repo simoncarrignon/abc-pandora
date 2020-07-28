@@ -10,45 +10,45 @@ import pickle
 from scipy import stats
 from abctools.sampler import TophatPrior
 from abctools.sampler import weighted_cov
-from modelwrapper.apemccExp import *
+from modelwrapper.ceecexp import *
 
-from mpi4py import MPI
-global mpi
-mpi = 0
-
-if (MPI.COMM_WORLD.size > 1):
-    mpi=1
-    global comm 
-    comm = MPI.COMM_WORLD #get the value of the mpi cluster
-
-
-#split a dictionarry of experiment amoung all workers, an return a new dictionarry with the same experiment and the score updated
-def MPIrunAndUpdate(dict_exp):
-    dict_exp=comm.bcast(dict_exp,root=0) #the keys of  dictionary is send to all worker
-    tmp_keys=list(dict_exp.keys())
-    #logging.debug(str(len(tmp_keys))+"keys for worker "+str(comm.rank))
-    sub_tmp_keys=np.array_split(tmp_keys,comm.size)[comm.rank]
-    #logging.debug(str(len(sub_tmp_keys))+"sub keys for worker "+str(comm.rank))
-    dict_exp_score={}
-    for t in sub_tmp_keys:
-        tmp_exp=dict_exp[t]
-        tmp_exp.gatherScore()
-        dict_exp_score[t]=tmp_exp.score
-        #logging.debug("compute score for "+t+"="+str(tmp_exp.score))
-    dict_exp_score=comm.gather(dict_exp_score,root=0) #send all the local best eff to the root worker
-    if(comm.rank == 0):
-        dict_exp_score={k: v for d in dict_exp_score for k, v in d.iteritems()}
-        #logging.debug("dict_exp_score in worker0")
-        #logging.debug(dict_exp_score.values())
-        #logging.debug("lets re-unify with dict_exp")
-        for t in tmp_keys:
-            #logging.debug("before dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
-            dict_exp[t].score=dict_exp_score[t] 
-            #logging.debug("after  dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
-    #print("pdict after comp worker"+str(comm.rank))
-    dict_exp=comm.bcast(dict_exp,root=0) #the new dictionnary is send to all worker
-    #logging.debug("new dict_exp of size="+str(len(dict_exp)))
-    return(dict_exp)
+#from mpi4py import MPI
+#global mpi
+#mpi = 0
+#
+#if (MPI.COMM_WORLD.size > 1):
+#    mpi=1
+#    global comm 
+#    comm = MPI.COMM_WORLD #get the value of the mpi cluster
+#
+#
+##split a dictionarry of experiment amoung all workers, an return a new dictionarry with the same experiment and the score updated
+#def MPIrunAndUpdate(dict_exp):
+#    dict_exp=comm.bcast(dict_exp,root=0) #the keys of  dictionary is send to all worker
+#    tmp_keys=list(dict_exp.keys())
+#    #logging.debug(str(len(tmp_keys))+"keys for worker "+str(comm.rank))
+#    sub_tmp_keys=np.array_split(tmp_keys,comm.size)[comm.rank]
+#    #logging.debug(str(len(sub_tmp_keys))+"sub keys for worker "+str(comm.rank))
+#    dict_exp_score={}
+#    for t in sub_tmp_keys:
+#        tmp_exp=dict_exp[t]
+#        tmp_exp.gatherScore()
+#        dict_exp_score[t]=tmp_exp.score
+#        #logging.debug("compute score for "+t+"="+str(tmp_exp.score))
+#    dict_exp_score=comm.gather(dict_exp_score,root=0) #send all the local best eff to the root worker
+#    if(comm.rank == 0):
+#        dict_exp_score={k: v for d in dict_exp_score for k, v in d.iteritems()}
+#        #logging.debug("dict_exp_score in worker0")
+#        #logging.debug(dict_exp_score.values())
+#        #logging.debug("lets re-unify with dict_exp")
+#        for t in tmp_keys:
+#            #logging.debug("before dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
+#            dict_exp[t].score=dict_exp_score[t] 
+#            #logging.debug("after  dict_exp="+str(dict_exp[t].score)+",dict_exp_score="+str(dict_exp_score[t]))
+#    #print("pdict after comp worker"+str(comm.rank))
+#    dict_exp=comm.bcast(dict_exp,root=0) #the new dictionnary is send to all worker
+#    #logging.debug("new dict_exp of size="+str(len(dict_exp)))
+#    return(dict_exp)
 
 
 def checkTime(start_time,ttime,limit):
@@ -124,11 +124,11 @@ def renewPool(N,pref,oldpool):
             one.remove()
             listparam.append(params)
         allparams=comm.gather(listparam,root=0) #I am usign this list of list because I am not sure if it will work with dictionary
-        if(comm.rank == 0): 
-            allparams=[p for sub in allparams for p in sub]
-            for p in allparams:
-                one=Experiment(p,pref)
-                pool_exp[one.getId()]=one
+        #if(comm.rank == 0): 
+        allparams=[p for sub in allparams for p in sub]
+        for p in allparams:
+            one=Experiment(p,pref)
+            pool_exp[one.getId()]=one
         pool_exp=comm.bcast(pool_exp,root=0) #the new dictionnary is send to all worker
         #logging.warning("check expe")
         #for ex in pool_exp:
@@ -259,15 +259,15 @@ if __name__ == '__main__' :
     backup=False
     backup_fold=""
 
-    if(comm.rank==0):
-        if (not os.path.isdir("backup")): os.mkdir("backup")
-        backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for backup
-        backup=True
-        if (not os.path.isdir(backup_fold)): 
-            os.mkdir(backup_fold)
-            backup=False
-    backup=comm.bcast(backup,root=0) #the new dictionnary is send to all worker
-    backup_fold=comm.bcast(backup_fold,root=0) #the new dictionnary is send to all worker
+    #if(comm.rank==0):
+    if (not os.path.isdir("backup")): os.mkdir("backup")
+    backup_fold=os.path.join("backup",str(sys.argv[6]))  #folder for backup
+    backup=True
+    if (not os.path.isdir(backup_fold)): 
+        os.mkdir(backup_fold)
+        backup=False
+    #backup=comm.bcast(backup,root=0) #the new dictionnary is send to all worker
+    #backup_fold=comm.bcast(backup_fold,root=0) #the new dictionnary is send to all worker
 
     orign=os.getcwd() #original working directory
     jobid="mother_" #the id of the main job (the one that will launch the job that will launch the job) is : mother_pid_sid where pid is the id of the main process (ie gien by the os running the main process) and sid is the id of task as given by the launcher (slurm or whatever)
@@ -288,11 +288,11 @@ if __name__ == '__main__' :
     #open a general log file
     if(not mpi):
         logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+".log",level=logging.DEBUG)
-    else:
-        if(comm.rank==0):
-            logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.DEBUG)
-        else:
-            logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.WARNING)
+    #else:
+    #    if(comm.rank==0):
+    #        logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.DEBUG)
+    #    else:
+    #        logging.basicConfig(format="%(asctime)s;%(levelname)s;%(message)s",filename=str(jobid)+"_worker"+str(comm.rank)+".log",level=logging.WARNING)
 
 
 
@@ -433,8 +433,8 @@ if __name__ == '__main__' :
                             dead+=1
 
             ##update the pool of particule given their score if the experiment has finished
-            if(mpi):
-                tmp_pdict=MPIrunAndUpdate(tmp_pdict)
+            #if(mpi):
+            #    tmp_pdict=MPIrunAndUpdate(tmp_pdict)
 
             tmp_keys=list(tmp_pdict.keys())
 
@@ -447,10 +447,10 @@ if __name__ == '__main__' :
                         tmp_pdict.pop(t,None)
                     else:
                         if(len(pdict)<numParticule):
-                            if(comm.rank==0):
-                                with open(tmpres,'a') as tmp_out:
-                                    tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
-                                    tmp_out.close()
+                            #if(comm.rank==0):
+                            with open(tmpres,'a') as tmp_out:
+                                tmp_out.write(tmp_exp.getId()+","+str(tmp_exp.score)+"\n")
+                                tmp_out.close()
                             pdict[tmp_exp.getId()]=tmp_exp.score
                             newpool[tmp_exp.getId()]=tmp_exp
                         tmp_pdict.pop(t,None)
@@ -491,8 +491,8 @@ if __name__ == '__main__' :
 
         #print(tmp_pdict)
 
-        if(comm.rank==0):
-            writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
+        #if(comm.rank==0):
+        writeParticules(pdict,epsilon,"result_"+str(epsilon)+".csv")
         logging.info('send cancel signal to remaining tasks')
         if(isNeedLauncher):
             for tid,tproc in tasks.items():

@@ -7,7 +7,7 @@
 
 start=`date +%s` #record the time to log the total execution time
 
-python manual_abc.py $@ 
+python main_abc.py $@ 
 
 end=`date +%s`
 

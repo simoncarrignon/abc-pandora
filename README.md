@@ -47,12 +47,12 @@ if you have installed everything already somewhere else :
 ln -s ${HOME}/pandora_abc/* .
 ```
 
-We mostly ready, in theory you are almost able to run  `./manual_abc.py`:
+We mostly ready, in theory you are almost able to run  `./main_abc.py`:
 If you are in marenostrum don't run it in the login{1-3} node as you will be quickly killed. You can ask for a node or run a interactive job:
 
 ```bash
 salloc -p interactive  
-python ./manual_abc.py numParticule numpart  numproc_node epsilon
+python ./main_abc.py numParticule numpart  numproc_node epsilon
 ```
 
 where 
