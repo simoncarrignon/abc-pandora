@@ -54,6 +54,8 @@ class Experiment:
     """
     
     def __init__(self, params,outpath, prefId="",rerun=0):
+
+        global indices
         binpath=""
         if(os.getenv('BSC_MACHINE')):
             binpath="/home/bsc21/bsc21394/ceeculture/"
