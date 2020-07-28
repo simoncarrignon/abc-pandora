@@ -1,6 +1,6 @@
 #script usage: Rscrip --vanilla folder steps diff <- function
 #This script compute a simple score between a simulation and real data
-#the result of the simulation have to be in `folder` and the real data in `~/data_per_year.csv`
+#the result of the simulation have to be in `folder` and the real data in `../realdata//data_per_year.csv`
 #`steps` represent the total number of year that will be used to compute the simpson diversity
 #score= \frac{\sum_{y}{|simpson(sim_y)-simpson(data_y)|}}{y}
 

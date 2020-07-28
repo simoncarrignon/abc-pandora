@@ -230,7 +230,7 @@ generateDataCount <- function(numperiods,pattern="div",proportion=T,goods=NULL){
 		print("unrecognized pattern")
 		stop(-1)
 	}
-	data=read.csv("~/data_per_year.csv")
+	data=read.csv("../realdata/data_per_year.csv")
 	data$goods=data$Fabric
 
 	if(is.null(goods))
