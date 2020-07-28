@@ -11,13 +11,14 @@ from scipy import stats
 from abctools.sampler import TophatPrior
 from abctools.sampler import weighted_cov
 from modelwrapper.ceecexp import *
+from modelwrapper.ceecexp import indices
 
 #from mpi4py import MPI
 #global mpi
 #mpi = 0
 #
 #if (MPI.COMM_WORLD.size > 1):
-#    mpi=1
+mpi=0
 #    global comm 
 #    comm = MPI.COMM_WORLD #get the value of the mpi cluster
 #
@@ -104,37 +105,37 @@ def renewPool(N,pref,oldpool):
                 #    params = np.random.multivariate_normal(theta, sigma)
                 one=Experiment(params,pref)
             pool_exp[one.getId()]=one
-    if(mpi):
-        rng=np.array_split(range(N),comm.size)[comm.rank]
-        listparam=list()
-        for p in rng:
-            idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
-            theta = oldpool["thetas"][idx]
-            sigma = oldpool["sigma"]
-            params = np.random.multivariate_normal(theta, sigma)
-            one=Experiment(params,pref)
-            while(not one.consistence):
-                idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
-                theta = oldpool["thetas"][idx]
-                sigma = oldpool["sigma"]
-                params = np.random.multivariate_normal(theta, sigma)
-                #while (params<0).any():
-                #    params = np.random.multivariate_normal(theta, sigma)
-                one=Experiment(params,pref)
-            one.remove()
-            listparam.append(params)
-        allparams=comm.gather(listparam,root=0) #I am usign this list of list because I am not sure if it will work with dictionary
-        #if(comm.rank == 0): 
-        allparams=[p for sub in allparams for p in sub]
-        for p in allparams:
-            one=Experiment(p,pref)
-            pool_exp[one.getId()]=one
-        pool_exp=comm.bcast(pool_exp,root=0) #the new dictionnary is send to all worker
-        #logging.warning("check expe")
-        #for ex in pool_exp:
-        #    logging.warning(pool_exp[ex].getId())
-        #    logging.warning(pool_exp[ex].params)
-        #logging.warning("end check")
+    #if(mpi):
+    #    rng=np.array_split(range(N),comm.size)[comm.rank]
+    #    listparam=list()
+    #    for p in rng:
+    #        idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
+    #        theta = oldpool["thetas"][idx]
+    #        sigma = oldpool["sigma"]
+    #        params = np.random.multivariate_normal(theta, sigma)
+    #        one=Experiment(params,pref)
+    #        while(not one.consistence):
+    #            idx = np.random.choice(range(len(oldpool["ws"])), 1, p=oldpool["ws"]/np.sum(oldpool["ws"]))[0]
+    #            theta = oldpool["thetas"][idx]
+    #            sigma = oldpool["sigma"]
+    #            params = np.random.multivariate_normal(theta, sigma)
+    #            #while (params<0).any():
+    #            #    params = np.random.multivariate_normal(theta, sigma)
+    #            one=Experiment(params,pref)
+    #        one.remove()
+    #        listparam.append(params)
+    #    allparams=comm.gather(listparam,root=0) #I am usign this list of list because I am not sure if it will work with dictionary
+    #    #if(comm.rank == 0): 
+    #    allparams=[p for sub in allparams for p in sub]
+    #    for p in allparams:
+    #        one=Experiment(p,pref)
+    #        pool_exp[one.getId()]=one
+    #    pool_exp=comm.bcast(pool_exp,root=0) #the new dictionnary is send to all worker
+    #    #logging.warning("check expe")
+    #    #for ex in pool_exp:
+    #    #    logging.warning(pool_exp[ex].getId())
+    #    #    logging.warning(pool_exp[ex].params)
+    #    #logging.warning("end check")
     return(pool_exp)
 
 
